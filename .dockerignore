@@ -1,10 +1,12 @@
-**/sufle.yml
+sufle.yml
+sufle*.yml
 .DS_Store
 .turbo
 .env.*
 .env
 *.sqlite
 **/sample/
+*.conf
 
 # Logs
 logs

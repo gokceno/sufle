@@ -21,7 +21,6 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build API and Push to Registry
-        id: build_push
         uses: docker/build-push-action@v5
         with:
           context: ./apps/api
@@ -29,7 +28,6 @@ jobs:
           tags: ghcr.io/gokceno/sufle-api:latest
 
       - name: Build CLI and Push to Registry
-        id: build_push
         uses: docker/build-push-action@v5
         with:
           context: ./apps/cli

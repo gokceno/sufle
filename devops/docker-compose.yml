@@ -4,7 +4,7 @@ services:
     container_name: rclone
     command: rcd --rc-addr=:5572 --rc-user=admin --rc-pass=password --rc-serve
     volumes:
-      - ./apps/cli/rclone.conf:/rclone.conf
+      - ./rclone.conf:/rclone.conf
       - rclone_data:/data/
     environment:
       - RCLONE_CONFIG=/rclone.conf

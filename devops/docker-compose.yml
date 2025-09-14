@@ -1,0 +1,82 @@
+services:
+  rclone:
+    image: rclone/rclone:latest
+    container_name: rclone
+    command: rcd --rc-addr=:5572 --rc-user=admin --rc-pass=password --rc-serve
+    volumes:
+      - ./apps/cli/rclone.conf:/rclone.conf
+      - rclone_data:/data/
+    environment:
+      - RCLONE_CONFIG=/rclone.conf
+    restart: unless-stopped
+
+  indexer:
+    image: ghcr.io/gokceno/sufle-cli:latest
+    container_name: indexer
+    command: start:cli index
+    volumes:
+      - ./sufle-cli.yml:/app/apps/cli/sufle.yml
+      - cli_data:/app/apps/cli/db
+    restart: unless-stopped
+    depends_on:
+      - api
+      - rclone
+
+  vectorizer:
+    image: ghcr.io/gokceno/sufle-cli:latest
+    container_name: vectorizer
+    command: start:cli vectorize
+    volumes:
+      - cli_data:/app/apps/cli/db
+      - ./sufle-cli.yml:/app/apps/cli/sufle.yml
+    restart: unless-stopped
+    depends_on:
+      - api
+      - rclone
+
+  reducer:
+    image: ghcr.io/gokceno/sufle-cli:latest
+    container_name: reducer
+    command: start:cli reduce
+    volumes:
+      - cli_data:/app/apps/cli/db
+      - ./sufle-cli.yml:/app/apps/cli/sufle.yml
+    restart: unless-stopped
+    depends_on:
+      - api
+      - rclone
+
+  api:
+    image: ghcr.io/gokceno/sufle-api:latest
+    container_name: api
+    command: start:api
+    volumes:
+      - api_data:/app/apps/api/db
+      - ./sufle-api.yml:/app/apps/api/sufle.yml
+    restart: unless-stopped
+
+  openwebui:
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: openwebui
+    volumes:
+      - openwebui_data:/app/backend/data
+    restart: unless-stopped
+    environment:
+      - ADMIN_EMAIL
+      - WEBUI_URL
+      - ENABLE_FORWARD_USER_INFO_HEADERS=true
+      - ENABLE_LOGIN_FORM=true
+      - ENABLE_OAUTH_SIGNUP=false
+      - ENABLE_SIGNUP=true
+      - OPENAI_API_KEY=111-111-111
+      - OPENAI_API_BASE_URL=http://api:3000/v1
+      - ENABLE_OPENAI_API=true
+      - DEFAULT_MODELS=sufla-1a
+    depends_on:
+      - api
+
+volumes:
+  cli_data:
+  api_data:
+  rclone_data:
+  openwebui_data:

@@ -19,7 +19,7 @@ services:
       - LOG_LEVEL=info
     volumes:
       - ./apps/cli/sufle.yml:/app/apps/cli/sufle.yml
-      - ./apps/cli/brew-downloads:/app/apps/cli/brew-downloads
+      - ./apps/cli/sample/data:/app/apps/cli/sample/data
       - cli_data:/app/apps/cli/db
     restart: unless-stopped
     depends_on:
@@ -36,7 +36,7 @@ services:
     volumes:
       - cli_data:/app/apps/cli/db
       - ./apps/cli/sufle.yml:/app/apps/cli/sufle.yml
-      - ./apps/cli/brew-downloads:/app/apps/cli/brew-downloads
+      - ./apps/cli/sample/data:/app/apps/cli/sample/data
     restart: unless-stopped
     depends_on:
       - api
@@ -52,7 +52,7 @@ services:
     volumes:
       - cli_data:/app/apps/cli/db
       - ./apps/cli/sufle.yml:/app/apps/cli/sufle.yml
-      - ./apps/cli/brew-downloads:/app/apps/cli/brew-downloads
+      - ./apps/cli/sample/data:/app/apps/cli/sample/data
     restart: unless-stopped
     depends_on:
       - api

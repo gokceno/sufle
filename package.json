@@ -1,0 +1,18 @@
+{
+  "name": "@sufle/source",
+  "version": "0.0.1",
+  "license": "MIT",
+  "packageManager": "bun@1.2.13",
+  "repository": "git+https://github.com/gokceno/sufle.git",
+  "scripts": {
+    "start:cli": "cd apps/cli && bun src/main.js",
+    "start:api": "cd apps/api && bun src/index.ts"
+  },
+  "private": true,
+  "dependencies": {},
+  "devDependencies": {},
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ]
+}

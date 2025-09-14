@@ -1,0 +1,15 @@
+meta {
+  name: Delete Embeddings
+  type: http
+  seq: 3
+}
+
+delete {
+  url: {{BASE_URL}}/documents/bh4fwe8nh52y5rk6w2e856a0/embeddings
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+}

@@ -1,0 +1,35 @@
+{
+  "name": "@sufle/api",
+  "type": "module",
+  "version": "0.0.1",
+  "license": "MIT",
+  "packageManager": "bun@1.2.13",
+  "repository": "git+https://github.com/gokceno/sufle.git",
+  "scripts": {
+    "dev": "bun --watch src/index.ts",
+    "start": "bun src/index.ts"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.2.10",
+    "@types/luxon": "^3.6.2",
+    "drizzle-kit": "^0.31.0"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "@sufle/embeddings": "*",
+    "@fastify/auth": "^5.0.2",
+    "@langchain/community": "^0.3.53",
+    "@langchain/core": "^0.3.75",
+    "@langchain/google-genai": "^0.1.0",
+    "@libsql/client": "^0.15.14",
+    "@paralleldrive/cuid2": "^2.2.2",
+    "drizzle-orm": "^0.44.5",
+    "fastify": "^5.3.3",
+    "luxon": "^3.6.1",
+    "winston": "^3.17.0",
+    "yaml": "^2.7.1",
+    "zod": "^3.24.3"
+  }
+}

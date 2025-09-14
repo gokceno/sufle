@@ -1,0 +1,1 @@
+DROP INDEX `versions_file_md5_hash_unique`;

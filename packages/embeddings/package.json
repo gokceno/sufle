@@ -1,0 +1,21 @@
+{
+  "name": "@sufle/embeddings",
+  "type": "module",
+  "version": "0.0.1",
+  "main": "src/index.ts",
+  "module": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "license": "MIT",
+  "packageManager": "bun@1.2.13",
+  "repository": "git+https://github.com/gokceno/sufle.git",
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "@langchain/google-genai": "^0.2.16",
+    "@langchain/ollama": "^0.2.0",
+    "@langchain/openai": "^0.3.16"
+  }
+}

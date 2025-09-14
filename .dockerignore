@@ -1,0 +1,15 @@
+**/sufle.yml
+.DS_Store
+.turbo
+.env.*
+.env
+*.sqlite
+
+# Logs
+logs
+*.log
+*.log*
+
+# Dependency directories - but preserve workspace structure
+**/node_modules/.cache
+**/node_modules/.pnpm

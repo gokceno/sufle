@@ -1,0 +1,1 @@
+ALTER TABLE `documents` ADD `last_checked_at` integer DEFAULT null;

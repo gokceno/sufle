@@ -1,0 +1,20 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1756649736662,
+      "tag": "0000_rainy_master_chief",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1757571811737,
+      "tag": "0001_empty_warbound",
+      "breakpoints": true
+    }
+  ]
+}

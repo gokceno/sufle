@@ -1,0 +1,27 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1756612161769,
+      "tag": "0000_furry_molten_man",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1756620263541,
+      "tag": "0001_flimsy_masque",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1757588164989,
+      "tag": "0002_eminent_scorpion",
+      "breakpoints": true
+    }
+  ]
+}

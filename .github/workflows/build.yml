@@ -23,13 +23,13 @@ jobs:
       - name: Build API and Push to Registry
         uses: docker/build-push-action@v5
         with:
-          context: ./apps/api
+          file: ./apps/api/Dockerfile
           push: true
           tags: ghcr.io/gokceno/sufle-api:latest
 
       - name: Build CLI and Push to Registry
         uses: docker/build-push-action@v5
         with:
-          context: ./apps/cli
+          file: ./apps/cli/Dockerfile
           push: true
           tags: ghcr.io/gokceno/sufle-cli:latest

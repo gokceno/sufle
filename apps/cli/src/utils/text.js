@@ -8,6 +8,8 @@ const chunk = async (
   const chunkitOptions = {
     onnxEmbeddingModel,
     maxTokenSize,
+    localModelPath: "./models",
+    modelCacheDir: "./models"
   };
   const chunks = await chunkit(
     [{ document_name: 'default', document_text: text }],

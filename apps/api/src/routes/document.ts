@@ -187,7 +187,7 @@ export default async function document(fastify: FastifyInstance) {
           asc(documents.updatedAt),
           asc(documents.lastCheckedAt),
         ],
-        limit: 25,
+        limit: 10,
       });
       fastify.logger.info(`Loaded ${result.length} records.`);
       if (isMarkLastCheckedAt === true) {

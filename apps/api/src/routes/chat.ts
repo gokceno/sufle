@@ -5,14 +5,15 @@ import type {
 } from "../types/chat";
 import { createId } from "@paralleldrive/cuid2";
 import { factory as rag } from "../rag";
-import { yaml, raw } from "../utils";
-import type { Config, RawConfig } from "../types";
 import {
+  yaml,
+  raw,
   missingRequiredFields,
   noModelFound,
   noUserMessage,
   streamingNotSupported,
-} from "../rag/openai/response";
+} from "../utils";
+import type { Config, RawConfig } from "../types";
 
 const config: Config = yaml(process.env.CONFIG_PATH || "sufle.yml");
 const rawConfig: RawConfig = raw(process.env.CONFIG_PATH || "sufle.yml");
@@ -27,7 +28,11 @@ const outputModel = {
 export default async function chat(fastify: FastifyInstance) {
   fastify.addHook(
     "preHandler",
-    fastify.auth([fastify.verifyApiKey, fastify.verifyBearerToken, fastify.verifyOWUI]),
+    fastify.auth([
+      fastify.verifyApiKey,
+      fastify.verifyBearerToken,
+      fastify.verifyOWUI,
+    ])
   );
   fastify.post<{
     Body: ChatCompletionRequestBody;
@@ -35,7 +40,7 @@ export default async function chat(fastify: FastifyInstance) {
     "/v1/chat/completions",
     async (
       request: FastifyRequest<{ Body: ChatCompletionRequestBody }>,
-      reply: FastifyReply,
+      reply: FastifyReply
     ) => {
       const { model, messages, stream } = request.body;
 
@@ -59,7 +64,7 @@ export default async function chat(fastify: FastifyInstance) {
         const { perform, tokens } = rag(config.rag.provider);
         const ragResponse = await perform(
           lastUserMessage.content,
-          request.permissions,
+          request.permissions
         );
 
         const response: ChatCompletionResponse = {
@@ -94,7 +99,7 @@ export default async function chat(fastify: FastifyInstance) {
         fastify.logger.error(error, "Error in chat completion");
         return reply.status(500).send({ error: "Internal server error" });
       }
-    },
+    }
   );
 
   fastify.get(
@@ -109,7 +114,7 @@ export default async function chat(fastify: FastifyInstance) {
         fastify.logger.error(error, "Error fetching models");
         return reply.status(500).send({ error: "Internal server error" });
       }
-    },
+    }
   );
 
   fastify.get<{
@@ -118,7 +123,7 @@ export default async function chat(fastify: FastifyInstance) {
     "/v1/models/:model",
     async (
       request: FastifyRequest<{ Params: { model: string } }>,
-      reply: FastifyReply,
+      reply: FastifyReply
     ) => {
       const { model } = request.params;
 
@@ -132,6 +137,6 @@ export default async function chat(fastify: FastifyInstance) {
         fastify.logger.error(error, "Error fetching model");
         return reply.status(500).send({ error: "Internal server error" });
       }
-    },
+    }
   );
 }

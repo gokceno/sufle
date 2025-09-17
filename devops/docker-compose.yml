@@ -14,6 +14,9 @@ services:
     image: ghcr.io/gokceno/sufle-cli:latest
     container_name: indexer
     command: start:cli index
+    environment:
+      - LOG_LEVEL=info
+      - DB_MIGRATIONS_APPLY=true
     volumes:
       - ./sufle-cli.yml:/app/apps/cli/sufle.yml
       - cli_data:/app/apps/cli/db
@@ -26,6 +29,9 @@ services:
     image: ghcr.io/gokceno/sufle-cli:latest
     container_name: vectorizer
     command: start:cli vectorize
+    environment:
+      - LOG_LEVEL=info
+      - DB_MIGRATIONS_APPLY=false
     volumes:
       - cli_data:/app/apps/cli/db
       - ./sufle-cli.yml:/app/apps/cli/sufle.yml
@@ -38,6 +44,9 @@ services:
     image: ghcr.io/gokceno/sufle-cli:latest
     container_name: reducer
     command: start:cli reduce
+    environment:
+      - LOG_LEVEL=info
+      - DB_MIGRATIONS_APPLY=false
     volumes:
       - cli_data:/app/apps/cli/db
       - ./sufle-cli.yml:/app/apps/cli/sufle.yml
@@ -50,6 +59,9 @@ services:
     image: ghcr.io/gokceno/sufle-api:latest
     container_name: api
     command: start:api
+    environment:
+      - LOG_LEVEL=info
+      - DB_MIGRATIONS_APPLY=true
     volumes:
       - api_data:/app/apps/api/db
       - ./sufle-api.yml:/app/apps/api/sufle.yml
@@ -64,6 +76,7 @@ services:
     environment:
       - ADMIN_EMAIL
       - WEBUI_URL
+      - CORS_ALLOW_ORIGIN
       - ENABLE_FORWARD_USER_INFO_HEADERS=true
       - ENABLE_LOGIN_FORM=true
       - ENABLE_OAUTH_SIGNUP=false

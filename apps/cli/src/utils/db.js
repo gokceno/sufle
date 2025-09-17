@@ -6,6 +6,8 @@ const db = drizzle(`file:${process.env.DB_PATH || "./db/db.sqlite"}`, {
   schema,
 });
 
-await migrate(db, { migrationsFolder: "./migrations" });
+if (process.env.DB_MIGRATIONS_APPLY == "true") {
+  await migrate(db, { migrationsFolder: "./migrations" });
+}
 
 export { db, schema };

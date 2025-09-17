@@ -17,6 +17,7 @@ services:
     command: start:cli index
     environment:
       - LOG_LEVEL=info
+      - DB_MIGRATIONS_APPLY=true
     volumes:
       - ./apps/cli/sufle.yml:/app/apps/cli/sufle.yml
       - ./apps/cli/sample/data:/app/apps/cli/sample/data
@@ -33,6 +34,7 @@ services:
     command: start:cli vectorize
     environment:
       - LOG_LEVEL=info
+      - DB_MIGRATIONS_APPLY=false
     volumes:
       - cli_data:/app/apps/cli/db
       - ./apps/cli/sufle.yml:/app/apps/cli/sufle.yml
@@ -49,6 +51,7 @@ services:
     command: start:cli reduce
     environment:
       - LOG_LEVEL=info
+      - DB_MIGRATIONS_APPLY=false
     volumes:
       - cli_data:/app/apps/cli/db
       - ./apps/cli/sufle.yml:/app/apps/cli/sufle.yml
@@ -66,33 +69,13 @@ services:
     command: start:api
     environment:
       - LOG_LEVEL=info
+      - DB_MIGRATIONS_APPLY=true
     volumes:
       - api_data:/app/apps/api/db
       - ./apps/api/sufle.yml:/app/apps/api/sufle.yml
     restart: unless-stopped
 
-  openwebui:
-    image: ghcr.io/open-webui/open-webui:main
-    container_name: openwebui
-    volumes:
-      - openwebui_data:/app/backend/data
-    restart: unless-stopped
-    environment:
-      - ADMIN_EMAIL
-      - WEBUI_URL
-      - ENABLE_FORWARD_USER_INFO_HEADERS=true
-      - ENABLE_LOGIN_FORM=true
-      - ENABLE_OAUTH_SIGNUP=false
-      - ENABLE_SIGNUP=true
-      - OPENAI_API_KEY=111-111-111
-      - OPENAI_API_BASE_URL=http://api:3000/v1
-      - ENABLE_OPENAI_API=true
-      - DEFAULT_MODELS=sufla-1a
-    depends_on:
-      - api
-
 volumes:
   cli_data:
   api_data:
   rclone_data:
-  openwebui_data:

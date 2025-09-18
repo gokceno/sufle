@@ -5,7 +5,7 @@ import {
   remove as removeDocument,
 } from "../models/document";
 import { factory as storageFactory } from "../storage";
-import { yaml as config, logger } from "../utils";
+import { parse as config, logger } from "../utils";
 
 const reduce = command({
   name: "reduce",
@@ -25,7 +25,7 @@ const reduce = command({
         {
           features: ["markLastCheckedAt", "omitLastChecked"],
         },
-        env,
+        env
       );
       logger.info(`Loaded ${documents.length} documents.`);
       documents.map(async ({ filePath, fileRemote, id }) => {

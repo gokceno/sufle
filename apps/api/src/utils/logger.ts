@@ -1,4 +1,5 @@
 import { createLogger, format, transports } from "winston";
+import type { Logger } from "winston";
 
 const logger = createLogger({
   level: process.env.LOG_LEVEL || "info",
@@ -8,7 +9,7 @@ const logger = createLogger({
     }),
     format.errors({ stack: true }),
     format.splat(),
-    format.json(),
+    format.json()
   ),
   transports: [
     new transports.Console({
@@ -17,4 +18,4 @@ const logger = createLogger({
   ],
 });
 
-export { logger };
+export { logger, type Logger };

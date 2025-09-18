@@ -12,6 +12,7 @@
   "private": true,
   "dependencies": {
     "@sufle/embeddings": "*",
+    "@sufle/config": "*",
     "@drizzle-team/brocli": "^0.11.0",
     "@google/generative-ai": "^0.24.1",
     "@langchain/community": "^0.3.22",
@@ -22,7 +23,6 @@
     "semantic-chunking": "^2.4.4",
     "toad-scheduler": "^3.0.1",
     "winston": "^3.17.0",
-    "yaml": "^2.7.0",
     "zod": "^3.24.1"
   },
   "devDependencies": {

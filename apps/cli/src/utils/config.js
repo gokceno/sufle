@@ -1,38 +1,5 @@
-import fs from "fs";
-import YAML from "yaml";
+import { create as createConfig } from "@sufle/config";
 import { z } from "zod";
-
-const yaml = (configFileName) => {
-  if (!fs.existsSync(configFileName)) {
-    throw new Error("Config file not found");
-  }
-  const file = fs.readFileSync(configFileName, "utf8");
-  const snakeToCamelCase = (str) =>
-    str.replace(/_([a-z])/g, (g) => g[1].toUpperCase());
-
-  const convertKeysToCamelCase = (obj) => {
-    if (Array.isArray(obj)) {
-      return obj.map((item) => convertKeysToCamelCase(item));
-    }
-    if (obj && typeof obj === "object") {
-      return Object.fromEntries(
-        Object.entries(obj).map(([key, value]) => [
-          snakeToCamelCase(key),
-          convertKeysToCamelCase(value),
-        ]),
-      );
-    }
-    return obj;
-  };
-
-  const config = YAML.parse(file);
-  const validatedConfig = configSchema.safeParse(config);
-  if (!validatedConfig.success) {
-    throw new Error(`Invalid config: ${validatedConfig.error}`);
-  }
-
-  return convertKeysToCamelCase(config);
-};
 
 const configSchema = z.object({
   backend: z.object({
@@ -69,8 +36,8 @@ const configSchema = z.object({
       id: z.string(),
       remote: z.string().optional(),
       dirs: z.array(z.string()),
-    }),
+    })
   ),
 });
 
-export { yaml };
+export const { parse, raw } = createConfig(configSchema);

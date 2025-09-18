@@ -7,7 +7,12 @@ import {
 } from "../models/document";
 import { remove as removeEmbeddingsFromDocument } from "../models/embedding";
 import { factory as storageFactory } from "../storage";
-import { yaml as config, chunk, convert as toMarkdown, logger } from "../utils";
+import {
+  parse as config,
+  chunk,
+  convert as toMarkdown,
+  logger,
+} from "../utils";
 import { store } from "../stores/http";
 
 const vectorize = command({
@@ -25,7 +30,7 @@ const vectorize = command({
 
     const embeddings = embeddingsFactory(
       env.embeddings.provider,
-      env.embeddings.opts,
+      env.embeddings.opts
     );
 
     const vectorStore = store({
@@ -41,14 +46,14 @@ const vectorize = command({
       const CONCURRENT_LIMIT = 8;
       const documents = await findDocuments(
         { features: ["omitLastUpdated", "includeLatestVersion"] },
-        env,
+        env
       );
       logger.info(`Loaded ${documents.length} document(s)`);
       documents
         .filter(
           (d) =>
             d.latestVersion?.fileMd5Hash &&
-            d.fileMd5Hash !== d.latestVersion.fileMd5Hash,
+            d.fileMd5Hash !== d.latestVersion.fileMd5Hash
         )
         .map(async ({ id, filePath, fileRemote, latestVersion }) => {
           logger.info(`Loaded file: ${filePath}`);
@@ -64,7 +69,7 @@ const vectorize = command({
                 logger,
                 remote: fileRemote,
                 ...(env.storage.opts && env.storage.opts),
-              },
+              }
             );
             if (!fileContents) {
               logger.warn(`File at ${filePath} is empty or cannot be opened.`);
@@ -72,26 +77,26 @@ const vectorize = command({
             const textContents = toMarkdown(fileContents, { logger });
             if (!textContents) {
               logger.warn(
-                `File at ${filePath} cannot be converted to plain text or is empty.`,
+                `File at ${filePath} cannot be converted to plain text or is empty.`
               );
             }
             const chunks = await chunk(textContents);
             if (chunks.length) {
               logger.info(
-                `Started processing total of ${chunks.length} chunks.`,
+                `Started processing total of ${chunks.length} chunks.`
               );
               while (completedChunks < chunks.length) {
                 logger.info(
-                  `Started processing from ${completedChunks}. chunk.`,
+                  `Started processing from ${completedChunks}. chunk.`
                 );
                 const batch = chunks.slice(
                   completedChunks,
-                  completedChunks + CONCURRENT_LIMIT,
+                  completedChunks + CONCURRENT_LIMIT
                 );
                 await Promise.all(
                   batch.map(
-                    async ({ text }) => await vectorStore.addDocument(text, id),
-                  ),
+                    async ({ text }) => await vectorStore.addDocument(text, id)
+                  )
                 );
                 completedChunks += batch.length;
                 await processDocument(
@@ -102,10 +107,10 @@ const vectorize = command({
                     completedChunks,
                   },
                   logger,
-                  env,
+                  env
                 );
                 logger.info(
-                  `Processed ${batch.length} chunks, completed a total of ${completedChunks} chunks.`,
+                  `Processed ${batch.length} chunks, completed a total of ${completedChunks} chunks.`
                 );
               }
             } else {

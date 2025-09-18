@@ -4,17 +4,17 @@ import {
 } from "@langchain/core/runnables";
 import { StringOutputParser } from "@langchain/core/output_parsers";
 import { factory as chatFactory } from "../../chat";
-import { yaml } from "../../utils";
+import { parse } from "../../utils";
 import { factory as storeFactory } from "../../stores";
 import type { Config, RetrievedDoc } from "../../types";
 import type { ChatMessage } from "../../types/chat";
 import { prompt } from "./prompt";
 
-const config: Config = yaml(process.env.CONFIG_PATH || "sufle.yml");
+const config: Config = parse(process.env.CONFIG_PATH || "sufle.yml");
 
 const initialize = async () => {
   const { initialize, filter } = await storeFactory(
-    config.rag.vectorStore.provider,
+    config.rag.vectorStore.provider
   );
   const llm = chatFactory(config.rag.chat.provider, config.rag.chat.opts);
   return { store: initialize(), llm, filter };
@@ -22,7 +22,7 @@ const initialize = async () => {
 
 const perform = async (
   query: string,
-  permissions?: Array<object>,
+  permissions?: Array<object>
 ): Promise<string> => {
   const { store, llm, filter } = await initialize();
   const retriever = store.asRetriever({
@@ -33,7 +33,7 @@ const perform = async (
   const chain = RunnableSequence.from([
     {
       context: retriever.pipe((docs: Array<RetrievedDoc>) =>
-        docs.map((doc: RetrievedDoc) => doc.pageContent).join("\n\n"),
+        docs.map((doc: RetrievedDoc) => doc.pageContent).join("\n\n")
       ),
       question: new RunnablePassthrough(),
     },

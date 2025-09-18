@@ -1,50 +1,6 @@
-import fs from "fs";
-import YAML from "yaml";
+import { create as createConfig } from "@sufle/config";
+import type { CamelCaseConfig } from "@sufle/config/types";
 import { z } from "zod";
-import type { RawConfig, Config } from "../types";
-
-const raw = (configFileName: string): RawConfig => {
-  if (!fs.existsSync(configFileName)) {
-    throw new Error("Config file not found");
-  }
-  const file = fs.readFileSync(configFileName, "utf8");
-  const config: object = YAML.parse(file);
-  const validatedConfig: any = configSchema.safeParse(config);
-  if (!validatedConfig.success) {
-    throw new Error(`Invalid config: ${validatedConfig.error}`);
-  }
-  return config as RawConfig;
-};
-
-const yaml = (configFileName: string): Config => {
-  if (!fs.existsSync(configFileName)) {
-    throw new Error("Config file not found");
-  }
-  const file = fs.readFileSync(configFileName, "utf8");
-  const snakeToCamelCase = (str: string): string =>
-    str.replace(/_([a-z])/g, (g) => g[1].toUpperCase());
-
-  const convertKeysToCamelCase = (obj: object): object => {
-    if (Array.isArray(obj)) {
-      return obj.map((item) => convertKeysToCamelCase(item));
-    }
-    if (obj && typeof obj === "object") {
-      return Object.fromEntries(
-        Object.entries(obj as object).map(([key, value]) => [
-          snakeToCamelCase(key),
-          convertKeysToCamelCase(value),
-        ]),
-      );
-    }
-    return obj;
-  };
-  const config: object = YAML.parse(file);
-  const validatedConfig: any = configSchema.safeParse(config);
-  if (!validatedConfig.success) {
-    throw new Error(`Invalid config: ${validatedConfig.error}`);
-  }
-  return convertKeysToCamelCase(config) as Config;
-};
 
 const configSchema = z.object({
   output_model: z.object({
@@ -82,8 +38,12 @@ const configSchema = z.object({
       users: z.array(z.string()),
       api_keys: z.array(z.string()),
       workspaces: z.array(z.string()),
-    }),
+    })
   ),
 });
 
-export { yaml, raw };
+export type RawConfig = z.infer<typeof configSchema>;
+
+export type Config = CamelCaseConfig<RawConfig>;
+
+export const { parse, raw } = createConfig(configSchema);

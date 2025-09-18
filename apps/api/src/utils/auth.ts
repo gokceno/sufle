@@ -1,8 +1,12 @@
 import fastifyAuth from "@fastify/auth";
 import type { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
-import type { Config, ConfigPermission } from "../types";
+import type { Config, ConfigPermission, Logger } from "../types";
 
-export function setupAuth(fastify: FastifyInstance, config: Config, logger): void {
+export function setupAuth(
+  fastify: FastifyInstance,
+  config: Config,
+  logger: Logger
+): void {
   fastify.register(fastifyAuth);
 
   fastify.decorate(
@@ -31,18 +35,19 @@ export function setupAuth(fastify: FastifyInstance, config: Config, logger): voi
       } catch (err) {
         throw new Error("API key authentication failed.");
       }
-    },
+    }
   );
 
   fastify.decorate(
     "verifyBearerToken",
     async (request: FastifyRequest, reply: FastifyReply) => {
       try {
-
         if (!config.permissions) {
           throw new Error("No permissions defined.");
         }
-        const token = extractBearerToken(request.headers.authorization as string);
+        const token = extractBearerToken(
+          request.headers.authorization as string
+        );
         const permissions = config.permissions
           .filter((p: ConfigPermission) => p.apiKeys.includes(token))
           .map((p: ConfigPermission) => {
@@ -57,7 +62,7 @@ export function setupAuth(fastify: FastifyInstance, config: Config, logger): voi
       } catch (err) {
         throw new Error("Bearer token authentication failed.");
       }
-    },
+    }
   );
 
   fastify.decorate(
@@ -67,11 +72,15 @@ export function setupAuth(fastify: FastifyInstance, config: Config, logger): voi
         if (!config.permissions) {
           throw new Error("No permissions defined.");
         }
-        const owuiUserEmail = request.headers["X-OpenWebUI-User-Email"] as string;
+        const owuiUserEmail = request.headers[
+          "X-OpenWebUI-User-Email"
+        ] as string;
         if (!owuiUserEmail) {
           throw new Error("Missing X-OpenWebUI-User-Email header.");
         }
-        const token = extractBearerToken(request.headers.authorization as string);
+        const token = extractBearerToken(
+          request.headers.authorization as string
+        );
         const permissions = config.permissions
           .filter((p: ConfigPermission) => p.apiKeys.includes(token))
           .filter((p: ConfigPermission) => p.users.includes(owuiUserEmail))
@@ -82,12 +91,15 @@ export function setupAuth(fastify: FastifyInstance, config: Config, logger): voi
         if (!permissions.length) {
           throw new Error("No matching permissions found.");
         }
-        logger.debug(`API key ${token} and OWUI email ${owuiUserEmail} gained access.`, permissions);
+        logger.debug(
+          `API key ${token} and OWUI email ${owuiUserEmail} gained access.`,
+          permissions
+        );
         (request as any).permissions = permissions;
       } catch (err) {
         throw new Error("OpenWebUI authentication failed.");
       }
-    },
+    }
   );
 }
 
@@ -105,4 +117,4 @@ const extractBearerToken = (header: string): string => {
     throw new Error("Missing bearer token.");
   }
   return token;
-}
+};

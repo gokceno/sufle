@@ -6,16 +6,16 @@ import type {
 import { createId } from "@paralleldrive/cuid2";
 import { factory as rag } from "../rag";
 import {
-  yaml,
+  parse,
   raw,
   missingRequiredFields,
   noModelFound,
   noUserMessage,
   streamingNotSupported,
 } from "../utils";
-import type { Config, RawConfig } from "../types";
+import type { Config, RawConfig } from "../utils";
 
-const config: Config = yaml(process.env.CONFIG_PATH || "sufle.yml");
+const config: Config = parse(process.env.CONFIG_PATH || "sufle.yml");
 const rawConfig: RawConfig = raw(process.env.CONFIG_PATH || "sufle.yml");
 
 const outputModel = {

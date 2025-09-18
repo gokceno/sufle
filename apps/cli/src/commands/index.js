@@ -2,7 +2,7 @@ import { command, string } from "@drizzle-team/brocli";
 import { ToadScheduler, AsyncTask, CronJob } from "toad-scheduler";
 import { persist } from "../models/document";
 import { factory as storageFactory } from "../storage";
-import { yaml as config, allowedTypes, logger } from "../utils";
+import { parse as config, allowedTypes, logger } from "../utils";
 
 const index = command({
   name: "index",
@@ -15,7 +15,7 @@ const index = command({
   handler: async (opts) => {
     const env = config(opts["config-file"]);
     const { list: listFiles, hash: hashFiles } = storageFactory(
-      env.storage.provider,
+      env.storage.provider
     );
     const scheduler = new ToadScheduler();
     const task = new AsyncTask("Index files in given folders", async () => {
@@ -47,16 +47,16 @@ const index = command({
                     workspace,
                   },
                   logger,
-                  env,
+                  env
                 );
                 if (persistenceResult) {
                   indexedCount += persistenceResult.createdDocuments;
                   versionedCount += persistenceResult.createdVersions;
                 }
               }
-            }),
+            })
           );
-        }),
+        })
       );
       logger.info(`Indexed ${indexedCount} file(s)`);
       logger.info(`Versioned ${versionedCount} file(s)`);

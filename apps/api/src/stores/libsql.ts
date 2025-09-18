@@ -2,19 +2,19 @@ import { factory as embeddingsFactory } from "@sufle/embeddings";
 import { client as libsqlClient } from "../utils/db";
 import { LibSQLVectorStore } from "@langchain/community/vectorstores/libsql";
 import { embeddings as embeddingsTable } from "../schema";
-import { yaml } from "../utils/config";
+import { parse } from "../utils/config";
 import type { Config, ConfigPermission } from "../types";
 
 let vectorStore: LibSQLVectorStore | null = null;
 
-const config: Config = yaml(process.env.CONFIG_PATH || "sufle.yml");
+const config: Config = parse(process.env.CONFIG_PATH || "sufle.yml");
 
 const initialize = () => {
   if (vectorStore) return vectorStore;
 
   const embeddings = embeddingsFactory(
     config.rag.embeddings.provider,
-    config.rag.embeddings.opts,
+    config.rag.embeddings.opts
   );
 
   vectorStore = new LibSQLVectorStore(embeddings, {

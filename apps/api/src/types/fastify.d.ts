@@ -1,6 +1,6 @@
 import type { FastifyRequest, FastifyReply } from "fastify";
 import type { Config } from ".";
-import type { Logger } from "winston";
+import type { Logger } from "../utils";
 
 declare module "fastify" {
   interface FastifyRequest {
@@ -13,7 +13,10 @@ declare module "fastify" {
     config: Config;
     logger: Logger;
     verifyApiKey(request: FastifyRequest, reply: FastifyReply): Promise<void>;
-    verifyBearerToken(request: FastifyRequest, reply: FastifyReply): Promise<void>;
+    verifyBearerToken(
+      request: FastifyRequest,
+      reply: FastifyReply
+    ): Promise<void>;
     verifyOWUI(request: FastifyRequest, reply: FastifyReply): Promise<void>;
   }
 }

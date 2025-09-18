@@ -1,10 +1,10 @@
 import Fastify from "fastify";
-import { yaml, logger, setupAuth } from "./utils";
+import { parse, logger, setupAuth } from "./utils";
 import type { Config } from "./types";
 import type { FastifyInstance } from "fastify";
 import { documentRoute, chatRoute } from "./routes";
 
-const config: Config = yaml(process.env.CONFIG_PATH || "sufle.yml");
+const config: Config = parse(process.env.CONFIG_PATH || "sufle.yml");
 
 const fastify: FastifyInstance = Fastify();
 

@@ -3,22 +3,24 @@ on:
   workflow_dispatch:
   push:
     tags:
-      - "v*"
+      - "@sufle/api@*"
+      - "@sufle/cli@*"
 
 jobs:
-  build_and_push:
+  build_api:
+    if: startsWith(github.ref, 'refs/tags/@sufle/api@')
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
-    name: Image Build and Push
+    name: Build and Push API Image
     steps:
       - name: Git Checkout
         uses: actions/checkout@v3
 
       - name: Extract version from tag
         id: version
-        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+        run: echo "VERSION=${GITHUB_REF#refs/tags/@sufle/api@}" >> $GITHUB_OUTPUT
 
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
@@ -42,6 +44,34 @@ jobs:
           tags: |
             ghcr.io/gokceno/sufle-api:latest
             ghcr.io/gokceno/sufle-api:${{ steps.version.outputs.VERSION }}
+
+  build_cli:
+    if: startsWith(github.ref, 'refs/tags/@sufle/cli@')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    name: Build and Push CLI Image
+    steps:
+      - name: Git Checkout
+        uses: actions/checkout@v3
+
+      - name: Extract version from tag
+        id: version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/@sufle/cli@}" >> $GITHUB_OUTPUT
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
       - name: Build CLI and Push to Registry
         uses: docker/build-push-action@v5

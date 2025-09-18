@@ -1,6 +1,9 @@
 name: Build Images and Push to Registry
 on:
   workflow_dispatch:
+  push:
+    tags:
+      - "v*"
 
 jobs:
   build_and_push:
@@ -12,6 +15,10 @@ jobs:
     steps:
       - name: Git Checkout
         uses: actions/checkout@v3
+
+      - name: Extract version from tag
+        id: version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
 
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
@@ -32,7 +39,9 @@ jobs:
           file: ./apps/api/Dockerfile
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: ghcr.io/gokceno/sufle-api:latest
+          tags: |
+            ghcr.io/gokceno/sufle-api:latest
+            ghcr.io/gokceno/sufle-api:${{ steps.version.outputs.VERSION }}
 
       - name: Build CLI and Push to Registry
         uses: docker/build-push-action@v5
@@ -40,4 +49,6 @@ jobs:
           file: ./apps/cli/Dockerfile
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: ghcr.io/gokceno/sufle-cli:latest
+          tags: |
+            ghcr.io/gokceno/sufle-cli:latest
+            ghcr.io/gokceno/sufle-cli:${{ steps.version.outputs.VERSION }}

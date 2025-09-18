@@ -1,0 +1,23 @@
+{
+  "name": "@sufle/config",
+  "type": "module",
+  "version": "0.0.1",
+  "main": "src/index.ts",
+  "module": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./types": "./src/types.ts"
+  },
+  "license": "MIT",
+  "packageManager": "bun@1.2.13",
+  "repository": "git+https://github.com/gokceno/sufle.git",
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "dot-prop": "^10.0.0",
+    "dotenv": "^17.2.2",
+    "yaml": "^2.7.1",
+    "zod": "^3.24.3"
+  }
+}

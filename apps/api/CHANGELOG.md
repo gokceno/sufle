@@ -1,5 +1,11 @@
 # @sufle/api
 
+## 0.3.0
+
+### Minor Changes
+
+- f645c6f: Fine-tuned permissions with separate read-write access levels.
+
 ## 0.2.0
 
 ### Minor Changes

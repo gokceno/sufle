@@ -1,5 +1,16 @@
 # @sufle/api
 
+## 0.2.0
+
+### Minor Changes
+
+- 17df165: Upgraded to Zod 4, replaced basic if-checks with Zod.
+
+### Patch Changes
+
+- Updated dependencies [17df165]
+  - @sufle/config@0.1.0
+
 ## 0.1.0
 
 ### Minor Changes

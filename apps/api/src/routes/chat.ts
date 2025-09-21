@@ -29,11 +29,7 @@ const outputModel = {
 export default async function chat(fastify: FastifyInstance) {
   fastify.addHook(
     "preHandler",
-    fastify.auth([
-      fastify.verifyApiKey,
-      fastify.verifyBearerToken,
-      fastify.verifyOWUI,
-    ])
+    fastify.auth([fastify.verifyBearerToken, fastify.verifyOWUI])
   );
   fastify.post<{
     Body: ChatCompletionRequestBody;

@@ -6,6 +6,11 @@ export type ConfigPermission = {
   workspaces: string[];
 };
 
+export type WorkspacePermission = {
+  workspace: string;
+  access: Array<"read" | "write">;
+};
+
 export type RetrievedDoc = {
   pageContent: string;
 };

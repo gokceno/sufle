@@ -35,9 +35,9 @@ const configSchema = z.object({
   }),
   permissions: z.array(
     z.object({
-      users: z.array(z.string()),
+      users: z.array(z.email()),
       api_keys: z.array(z.string()),
-      workspaces: z.array(z.string()),
+      workspaces: z.array(z.string()), // TODO: Should raise an error if includes ":"
     })
   ),
 });

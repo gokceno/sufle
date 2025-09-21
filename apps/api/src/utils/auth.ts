@@ -1,6 +1,11 @@
 import fastifyAuth from "@fastify/auth";
 import type { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
-import type { Config, ConfigPermission, Logger } from "../types";
+import type {
+  Config,
+  ConfigPermission,
+  Logger,
+  WorkspacePermission,
+} from "../types";
 
 export function setupAuth(
   fastify: FastifyInstance,
@@ -13,22 +18,15 @@ export function setupAuth(
     "verifyApiKey",
     async (request: FastifyRequest, reply: FastifyReply) => {
       try {
-        if (!config.permissions) {
-          throw new Error("No permissions defined.");
-        }
-
         const apiKey = request.headers["x-api-key"] as string;
         if (!apiKey) {
           throw new Error("Missing x-api-key header.");
         }
+        const permissions = match(config.permissions, apiKey);
 
-        const permissions = config.permissions
-          .filter((p: ConfigPermission) => p.apiKeys.includes(apiKey))
-          .map((p: ConfigPermission) => {
-            return { workspaces: p.workspaces };
-          });
-        if (!permissions) {
-          throw new Error("No matching permissions found.");
+        if (!permissions.length) {
+          logger.error(`API key ${apiKey} matched no permissions.`);
+          throw new Error("No matching permissions.");
         }
         logger.debug(`API key ${apiKey} gained access.`, permissions);
         (request as any).permissions = permissions;
@@ -42,20 +40,13 @@ export function setupAuth(
     "verifyBearerToken",
     async (request: FastifyRequest, reply: FastifyReply) => {
       try {
-        if (!config.permissions) {
-          throw new Error("No permissions defined.");
-        }
         const token = extractBearerToken(
           request.headers.authorization as string
         );
-        const permissions = config.permissions
-          .filter((p: ConfigPermission) => p.apiKeys.includes(token))
-          .map((p: ConfigPermission) => {
-            return { workspaces: p.workspaces };
-          });
-
+        const permissions = match(config.permissions, token);
         if (!permissions.length) {
-          throw new Error("No matching permissions found.");
+          logger.error(`API key ${token} matched no permissions.`);
+          throw new Error("No matching permissions.");
         }
         logger.debug(`Bearer token key ${token} gained access.`, permissions);
         (request as any).permissions = permissions;
@@ -69,9 +60,6 @@ export function setupAuth(
     "verifyOWUI",
     async (request: FastifyRequest, reply: FastifyReply) => {
       try {
-        if (!config.permissions) {
-          throw new Error("No permissions defined.");
-        }
         const owuiUserEmail = request.headers[
           "X-OpenWebUI-User-Email"
         ] as string;
@@ -81,15 +69,10 @@ export function setupAuth(
         const token = extractBearerToken(
           request.headers.authorization as string
         );
-        const permissions = config.permissions
-          .filter((p: ConfigPermission) => p.apiKeys.includes(token))
-          .filter((p: ConfigPermission) => p.users.includes(owuiUserEmail))
-          .map((p: ConfigPermission) => {
-            return { workspaces: p.workspaces };
-          });
-
+        const permissions = match(config.permissions, token, owuiUserEmail);
         if (!permissions.length) {
-          throw new Error("No matching permissions found.");
+          logger.error(`API key ${token} matched no permissions.`);
+          throw new Error("No matching permissions.");
         }
         logger.debug(
           `API key ${token} and OWUI email ${owuiUserEmail} gained access.`,
@@ -107,14 +90,34 @@ const extractBearerToken = (header: string): string => {
   if (!header) {
     throw new Error("Missing Authorization header");
   }
-
   if (!header.startsWith("Bearer ")) {
     throw new Error("Invalid Authorization header format.");
   }
-
   const token = header.slice(7);
   if (!token) {
     throw new Error("Missing bearer token.");
   }
   return token;
+};
+
+const match = (
+  permissions: Array<ConfigPermission>,
+  apiKey: string,
+  owuiUserEmail: string | undefined = undefined
+): Array<WorkspacePermission> => {
+  if (!permissions) {
+    throw new Error("No permissions defined.");
+  }
+  return permissions
+    .filter((p) => p.apiKeys.includes(apiKey))
+    .filter((p) => !owuiUserEmail || p.users.includes(owuiUserEmail))
+    .flatMap((p) => {
+      return p.workspaces.map((workspace) => {
+        const [name, access] = workspace.split(":");
+        return {
+          workspace: name,
+          access: access === "rw" ? ["read", "write"] : ["read"],
+        };
+      });
+    });
 };

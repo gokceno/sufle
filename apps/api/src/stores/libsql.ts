@@ -3,7 +3,7 @@ import { client as libsqlClient } from "../utils/db";
 import { LibSQLVectorStore } from "@langchain/community/vectorstores/libsql";
 import { embeddings as embeddingsTable } from "../schema";
 import { parse } from "../utils/config";
-import type { Config, ConfigPermission } from "../types";
+import type { Config, WorkspacePermission } from "../types";
 
 let vectorStore: LibSQLVectorStore | null = null;
 
@@ -26,15 +26,16 @@ const initialize = () => {
   return vectorStore;
 };
 
-const filter = (permissions: Array<ConfigPermission>) => {
-  let workspaces: Array<string> = [];
-  permissions.map((p) => workspaces.push(...p.workspaces));
-  const escapedWorkspaces = workspaces.map((w) => `'${w.replace(/'/g, "''")}'`);
+const filter = (permissions: Array<WorkspacePermission>) => {
+  const workspaces: Array<string> = permissions
+    .filter((p) => p.access.includes("read"))
+    .map((p) => p.workspace)
+    .map((w) => `'${w.replace(/'/g, "''")}'`);
   return {
     filter: `
       document_id IN (
         SELECT id FROM documents
-        WHERE workspace_id IN (${escapedWorkspaces.join(", ")})
+        WHERE workspace_id IN (${workspaces.join(", ")})
       )
     `,
   };

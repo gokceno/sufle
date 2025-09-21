@@ -1,5 +1,5 @@
 import type { FastifyInstance, FastifyRequest } from "fastify";
-import { eq, and, sql, or, isNull, lt } from "drizzle-orm";
+import { eq, and, sql, or, isNull, lt, inArray } from "drizzle-orm";
 import * as z from "zod";
 import { db } from "../utils";
 import { documents, embeddings } from "../schema";
@@ -10,11 +10,10 @@ import type {
   CreateEmbeddingParams,
 } from "../types/document";
 
+import type { WorkspacePermission } from "../types";
+
 export default async function document(fastify: FastifyInstance) {
-  fastify.addHook(
-    "preHandler",
-    fastify.auth([fastify.verifyApiKey, fastify.verifyBearerToken])
-  );
+  fastify.addHook("preHandler", fastify.auth([fastify.verifyApiKey]));
 
   // Get document
   fastify.get<{
@@ -36,9 +35,17 @@ export default async function document(fastify: FastifyInstance) {
     const fileMd5Hash = headers["x-file-hash"];
     const workspaceId = headers["x-workspace-id"];
 
+    if (!request.permissions) {
+      throw new Error("No permissions set for user");
+    }
+    const workspaces: Array<string> = request.permissions
+      .filter((p: WorkspacePermission) => p.access.includes("read"))
+      .map((p: WorkspacePermission) => p.workspace);
+
     try {
       const document = await db.query.documents.findFirst({
         where: and(
+          inArray(documents.workspaceId, workspaces),
           ...[
             id !== undefined ? eq(documents.id, id) : [],
             fileMd5Hash !== undefined
@@ -88,9 +95,25 @@ export default async function document(fastify: FastifyInstance) {
       const { workspaceId, fileRemote, filePath }: z.infer<typeof bodySchema> =
         bodySchema.parse(request.body);
 
+      if (!request.permissions) {
+        throw new Error("No permissions set for user");
+      }
+      const workspaces: Array<string> = request.permissions
+        .filter((p: WorkspacePermission) => p.access.includes("write"))
+        .map((p: WorkspacePermission) => p.workspace);
+
+      if (!workspaces.includes(workspaceId)) {
+        return reply.status(403).send({
+          error: "Not enough permissions",
+        });
+      }
+
       // Check if document already exists
       const existingDocument = await db.query.documents.findFirst({
-        where: eq(documents.filePath, filePath),
+        where: and(
+          eq(documents.filePath, filePath),
+          inArray(documents.workspaceId, workspaces)
+        ),
         columns: { id: true },
       });
 
@@ -145,14 +168,26 @@ export default async function document(fastify: FastifyInstance) {
       const { id } = paramsSchema.parse(request.params);
       const { fileMd5Hash } = bodySchema.parse(request.body);
 
+      if (!request.permissions) {
+        throw new Error("No permissions set for user");
+      }
+      const workspaces: Array<string> = request.permissions
+        .filter((p: WorkspacePermission) => p.access.includes("write"))
+        .map((p: WorkspacePermission) => p.workspace);
+
       // Check if document exists
       const existingDocument = await db.query.documents.findFirst({
-        where: eq(documents.id, id),
+        where: and(
+          eq(documents.id, id),
+          inArray(documents.workspaceId, workspaces)
+        ),
         columns: { id: true },
       });
 
       if (!existingDocument) {
-        return reply.status(404).send({ error: "Document not found" });
+        return reply.status(404).send({
+          error: "Document not found or not enough permissions to proceed",
+        });
       }
 
       // Update the document
@@ -194,8 +229,16 @@ export default async function document(fastify: FastifyInstance) {
       const omitLastChecked = headers["x-omit-last-checked"];
       const omitLastUpdated = headers["x-omit-last-updated"];
 
+      if (!request.permissions) {
+        throw new Error("No permissions set for user");
+      }
+      const workspaces: Array<string> = request.permissions
+        .filter((p: WorkspacePermission) => p.access.includes("read"))
+        .map((p: WorkspacePermission) => p.workspace);
+
       const result = await db.query.documents.findMany({
         where: and(
+          inArray(documents.workspaceId, workspaces),
           ...[
             omitLastChecked === true
               ? or(
@@ -250,21 +293,30 @@ export default async function document(fastify: FastifyInstance) {
         id: z.cuid2(),
       });
       const { id } = paramsSchema.parse(request.params);
+      if (!request.permissions) {
+        throw new Error("No permissions set for user");
+      }
+      const workspaces: Array<string> = request.permissions
+        .filter((p: WorkspacePermission) => p.access.includes("write"))
+        .map((p: WorkspacePermission) => p.workspace);
+
       const [deletedDocument] = await db
         .delete(documents)
-        .where(eq(documents.id, id))
+        .where(
+          and(eq(documents.id, id), inArray(documents.workspaceId, workspaces))
+        )
         .returning({ id: documents.id });
 
       if (!deletedDocument) {
-        return reply.status(404).send({ error: "Document not found" });
+        return reply.status(404).send({
+          error: "Document not found or not enough permissions to proceed",
+        });
       }
-
       return reply.status(204).send();
     } catch (error) {
       if (error instanceof z.ZodError) {
         return reply.status(400).send({ error: "Document ID is required" });
       } else {
-        fastify.logger.error(error, `Error deleting document: ${id}`);
         return reply.status(500).send({ error: "Error deleting document" });
       }
     }
@@ -290,14 +342,26 @@ export default async function document(fastify: FastifyInstance) {
       const { embedding, chunkText }: z.infer<typeof bodySchema> =
         bodySchema.parse(request.body);
 
+      if (!request.permissions) {
+        throw new Error("No permissions set for user");
+      }
+      const workspaces: Array<string> = request.permissions
+        .filter((p: WorkspacePermission) => p.access.includes("write"))
+        .map((p: WorkspacePermission) => p.workspace);
+
       // Check if document exists
       const document = await db.query.documents.findFirst({
-        where: eq(documents.id, id),
+        where: and(
+          eq(documents.id, id),
+          inArray(documents.workspaceId, workspaces)
+        ),
         columns: { id: true },
       });
 
       if (!document) {
-        return reply.status(404).send({ error: "Document not found" });
+        return reply.status(404).send({
+          error: "Document not found or not enough permissions to proceed",
+        });
       }
 
       // Store the embedding
@@ -332,7 +396,7 @@ export default async function document(fastify: FastifyInstance) {
         });
       } else {
         fastify.logger.debug(error);
-        fastify.logger.error(`Error storing embeddings for document: ${id}`);
+        fastify.logger.error(`Error storing embeddings for document`);
         return reply.status(500).send({ error: "Error storing embeddings" });
       }
     }
@@ -349,14 +413,27 @@ export default async function document(fastify: FastifyInstance) {
       const { id }: z.infer<typeof paramsSchema> = paramsSchema.parse(
         request.params
       );
+
+      if (!request.permissions) {
+        throw new Error("No permissions set for user");
+      }
+      const workspaces: Array<string> = request.permissions
+        .filter((p: WorkspacePermission) => p.access.includes("write"))
+        .map((p: WorkspacePermission) => p.workspace);
+
       // Check if document exists
       const document = await db.query.documents.findFirst({
-        where: eq(documents.id, id),
+        where: and(
+          eq(documents.id, id),
+          inArray(documents.workspaceId, workspaces)
+        ),
         columns: { id: true },
       });
 
       if (!document) {
-        return reply.status(404).send({ error: "Document not found" });
+        return reply.status(404).send({
+          error: "Document not found or not enough permissions to proceed",
+        });
       }
 
       // Delete all embeddings for this document

@@ -19,10 +19,10 @@ FROM oven/bun:1 AS install
 
 WORKDIR /app
 
-# Copy workspace configuration first
+# Copy workspace configuration and source files
 COPY package.json bun.lock ./
-COPY apps/*/package.json apps/*/
-COPY packages/*/package.json packages/*/
+COPY apps/ apps/
+COPY packages/ packages/
 
 # Install dependencies (this creates the workspace structure)
 RUN bun install

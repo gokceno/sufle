@@ -11,8 +11,6 @@ const db = drizzle(client, {
   schema,
 });
 
-if (process.env.DB_MIGRATIONS_APPLY == "true") {
-  await migrate(db, { migrationsFolder: "./migrations" });
-}
+await migrate(db, { migrationsFolder: "./migrations" });
 
 export { db, client, schema };

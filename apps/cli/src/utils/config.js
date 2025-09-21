@@ -1,5 +1,5 @@
 import { create as createConfig } from "@sufle/config";
-import { z } from "zod";
+import * as z from "zod";
 
 const configSchema = z.object({
   backend: z.object({
@@ -17,7 +17,7 @@ const configSchema = z.object({
       .object({
         model: z.string().optional(),
         base_url: z.string().url().optional(),
-        openAI_api_key: z.string().optional(),
+        api_key: z.string().optional(),
       })
       .optional(),
   }),

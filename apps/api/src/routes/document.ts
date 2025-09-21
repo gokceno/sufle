@@ -1,5 +1,6 @@
 import type { FastifyInstance, FastifyRequest } from "fastify";
 import { eq, and, sql, or, isNull, lt } from "drizzle-orm";
+import * as z from "zod";
 import { db } from "../utils";
 import { documents, embeddings } from "../schema";
 import type {
@@ -12,17 +13,28 @@ import type {
 export default async function document(fastify: FastifyInstance) {
   fastify.addHook(
     "preHandler",
-    fastify.auth([fastify.verifyApiKey, fastify.verifyBearerToken]),
+    fastify.auth([fastify.verifyApiKey, fastify.verifyBearerToken])
   );
 
   // Get document
   fastify.get<{
     Params: GetDocumentParams;
   }>("/document", async (request, reply) => {
-    const id = request.headers["x-id"] as string | undefined;
-    const filePath = request.headers["x-file-path"] as string | undefined;
-    const fileMd5Hash = request.headers["x-file-hash"] as string | undefined;
-    const workspaceId = request.headers["x-workspace-id"] as string | undefined;
+    const headerSchema = z.object({
+      "x-id": z.cuid2().optional(),
+      "x-file-path": z.string().optional(),
+      "x-file-hash": z.hash("md5").optional(),
+      "x-workspace-id": z.cuid2().optional(),
+    });
+
+    const headers: z.infer<typeof headerSchema> = headerSchema.parse(
+      request.headers
+    );
+
+    const id = headers["x-id"];
+    const filePath = headers["x-file-path"];
+    const fileMd5Hash = headers["x-file-hash"];
+    const workspaceId = headers["x-workspace-id"];
 
     try {
       const document = await db.query.documents.findFirst({
@@ -38,7 +50,7 @@ export default async function document(fastify: FastifyInstance) {
             workspaceId !== undefined
               ? eq(documents.workspaceId, decodeURIComponent(workspaceId))
               : [],
-          ].flat(),
+          ].flat()
         ),
         columns: {
           id: true,
@@ -51,8 +63,14 @@ export default async function document(fastify: FastifyInstance) {
 
       return document;
     } catch (error) {
-      fastify.logger.error(error, "Error fetching document");
-      return reply.status(500).send({ error: "Internal server error" });
+      if (error instanceof z.ZodError) {
+        return reply.status(400).send({
+          error: "Required fields missing",
+        });
+      } else {
+        fastify.logger.error(error, "Error fetching document");
+        return reply.status(500).send({ error: "Internal server error" });
+      }
     }
   });
 
@@ -60,16 +78,16 @@ export default async function document(fastify: FastifyInstance) {
   fastify.post<{
     Body: CreateDocumentBody;
   }>("/documents", async (request, reply) => {
-    const { workspaceId, fileRemote, filePath } = request.body;
-
-    // Validation
-    if (!workspaceId || !fileRemote || !filePath) {
-      return reply.status(400).send({
-        error: "workspaceId, fileRemote and filePath are required",
-      });
-    }
-
     try {
+      const bodySchema = z.object({
+        workspaceId: z.cuid2(),
+        fileRemote: z.string(),
+        filePath: z.string(),
+      });
+
+      const { workspaceId, fileRemote, filePath }: z.infer<typeof bodySchema> =
+        bodySchema.parse(request.body);
+
       // Check if document already exists
       const existingDocument = await db.query.documents.findFirst({
         where: eq(documents.filePath, filePath),
@@ -101,33 +119,35 @@ export default async function document(fastify: FastifyInstance) {
 
       return reply.status(201).send(newDocument);
     } catch (error) {
-      fastify.logger.error(error, "Error creating document");
-      return reply.status(500).send({ error: "Internal server error" });
+      if (error instanceof z.ZodError) {
+        return reply.status(400).send({
+          error: "workspaceId, fileRemote and filePath are required",
+        });
+      } else {
+        fastify.logger.error(error, "Error creating document");
+        return reply.status(500).send({ error: "Error creating document" });
+      }
     }
   });
 
-  // Update document by MD5 hash
+  // Update document by ID
   fastify.put<{
     Params: GetDocumentParams;
     Body: { fileMd5Hash?: string };
-  }>("/documents/:documentId", async (request, reply) => {
-    const { documentId } = request.params;
-    const { fileMd5Hash } = request.body;
-
-    if (!documentId) {
-      return reply.status(400).send({ error: "documentId is required" });
-    }
-
-    if (!fileMd5Hash) {
-      return reply
-        .status(400)
-        .send({ error: "fileMd5Hash is required in body" });
-    }
-
+  }>("/documents/:id", async (request, reply) => {
     try {
+      const paramsSchema = z.object({
+        id: z.cuid2(),
+      });
+      const bodySchema = z.object({
+        fileMd5Hash: z.hash("md5"),
+      });
+      const { id } = paramsSchema.parse(request.params);
+      const { fileMd5Hash } = bodySchema.parse(request.body);
+
       // Check if document exists
       const existingDocument = await db.query.documents.findFirst({
-        where: eq(documents.id, documentId),
+        where: eq(documents.id, id),
         columns: { id: true },
       });
 
@@ -139,7 +159,7 @@ export default async function document(fastify: FastifyInstance) {
       const [updatedDocument] = await db
         .update(documents)
         .set({ fileMd5Hash })
-        .where(eq(documents.id, documentId))
+        .where(eq(documents.id, id))
         .returning({
           id: documents.id,
           fileMd5Hash: documents.fileMd5Hash,
@@ -147,18 +167,32 @@ export default async function document(fastify: FastifyInstance) {
 
       return updatedDocument;
     } catch (error) {
-      fastify.logger.error(error, "Error updating document");
-      return reply.status(500).send({ error: "Internal server error" });
+      if (error instanceof z.ZodError) {
+        return reply
+          .status(400)
+          .send({ error: "id, fileMd5Hash are required." });
+      } else {
+        fastify.logger.error(error, "Error updating document");
+        return reply.status(500).send({ error: "Internal server error" });
+      }
     }
   });
 
   // Get all documents (with optional filtering)
   fastify.get("/documents", async (request: FastifyRequest, reply) => {
     try {
-      const isMarkLastCheckedAt =
-        request.headers["x-mark-last-checked-at"] === "true";
-      const omitLastChecked = request.headers["x-omit-last-checked"] === "true";
-      const omitLastUpdated = request.headers["x-omit-last-updated"] === "true";
+      const headerSchema = z.object({
+        "x-mark-last-checked-at": z.coerce.boolean(),
+        "x-omit-last-checked": z.coerce.boolean(),
+        "x-omit-last-updated": z.coerce.boolean(),
+      });
+
+      const headers: z.infer<typeof headerSchema> = headerSchema.parse(
+        request.headers
+      );
+      const isMarkLastCheckedAt = headers["x-mark-last-checked-at"];
+      const omitLastChecked = headers["x-omit-last-checked"];
+      const omitLastUpdated = headers["x-omit-last-updated"];
 
       const result = await db.query.documents.findMany({
         where: and(
@@ -168,8 +202,8 @@ export default async function document(fastify: FastifyInstance) {
                   isNull(documents.lastCheckedAt),
                   lt(
                     documents.lastCheckedAt,
-                    sql`strftime('%s', 'now', '-1 minute')`,
-                  ),
+                    sql`strftime('%s', 'now', '-1 minute')`
+                  )
                 )
               : undefined,
             omitLastUpdated === true
@@ -177,11 +211,11 @@ export default async function document(fastify: FastifyInstance) {
                   isNull(documents.updatedAt),
                   lt(
                     documents.updatedAt,
-                    sql`strftime('%s', 'now', '-1 minute')`,
-                  ),
+                    sql`strftime('%s', 'now', '-1 minute')`
+                  )
                 )
               : undefined,
-          ],
+          ]
         ),
         orderBy: (documents, { asc }) => [
           asc(documents.updatedAt),
@@ -211,13 +245,11 @@ export default async function document(fastify: FastifyInstance) {
   fastify.delete<{
     Params: GetDocumentParams;
   }>("/documents/:id", async (request, reply) => {
-    const { id } = request.params;
-
-    if (!id) {
-      return reply.status(400).send({ error: "Document id is required" });
-    }
-
     try {
+      const paramsSchema = z.object({
+        id: z.cuid2(),
+      });
+      const { id } = paramsSchema.parse(request.params);
       const [deletedDocument] = await db
         .delete(documents)
         .where(eq(documents.id, id))
@@ -229,8 +261,12 @@ export default async function document(fastify: FastifyInstance) {
 
       return reply.status(204).send();
     } catch (error) {
-      fastify.logger.error(error, "Error deleting document");
-      return reply.status(500).send({ error: "Internal server error" });
+      if (error instanceof z.ZodError) {
+        return reply.status(400).send({ error: "Document ID is required" });
+      } else {
+        fastify.logger.error(error, `Error deleting document: ${id}`);
+        return reply.status(500).send({ error: "Error deleting document" });
+      }
     }
   });
 
@@ -239,26 +275,21 @@ export default async function document(fastify: FastifyInstance) {
     Params: CreateEmbeddingParams;
     Body: CreateEmbeddingBody;
   }>("/documents/:id/embeddings", async (request, reply) => {
-    const { id } = request.params;
-    const { embedding, chunkText } = request.body;
-
-    if (!id) {
-      return reply.status(400).send({ error: "Document ID is required" });
-    }
-
-    if (
-      !embedding ||
-      !Array.isArray(embedding) ||
-      !chunkText ||
-      typeof chunkText !== "string"
-    ) {
-      return reply.status(400).send({
-        error:
-          "Missing parameters: embedding (array) and chunkText (string) are required",
-      });
-    }
-
     try {
+      const paramsSchema = z.object({
+        id: z.cuid2(),
+      });
+      const bodySchema = z.object({
+        embedding: z.array(z.number()),
+        chunkText: z.string(),
+      });
+
+      const { id }: z.infer<typeof paramsSchema> = paramsSchema.parse(
+        request.params
+      );
+      const { embedding, chunkText }: z.infer<typeof bodySchema> =
+        bodySchema.parse(request.body);
+
       // Check if document exists
       const document = await db.query.documents.findFirst({
         where: eq(documents.id, id),
@@ -294,9 +325,16 @@ export default async function document(fastify: FastifyInstance) {
 
       return reply.status(201).send(newEmbedding);
     } catch (error) {
-      fastify.logger.debug(error);
-      fastify.logger.error("Error storing embeddings");
-      return reply.status(500).send({ error: "Internal server error" });
+      if (error instanceof z.ZodError) {
+        return reply.status(400).send({
+          error:
+            "Missing parameters: id, embedding (array) and chunkText (string) are required",
+        });
+      } else {
+        fastify.logger.debug(error);
+        fastify.logger.error(`Error storing embeddings for document: ${id}`);
+        return reply.status(500).send({ error: "Error storing embeddings" });
+      }
     }
   });
 
@@ -304,12 +342,13 @@ export default async function document(fastify: FastifyInstance) {
   fastify.delete<{
     Params: CreateEmbeddingParams;
   }>("/documents/:id/embeddings", async (request, reply) => {
-    const { id } = request.params;
-    if (!id) {
-      return reply.status(400).send({ error: "Document ID is required" });
-    }
-
     try {
+      const paramsSchema = z.object({
+        id: z.cuid2(),
+      });
+      const { id }: z.infer<typeof paramsSchema> = paramsSchema.parse(
+        request.params
+      );
       // Check if document exists
       const document = await db.query.documents.findFirst({
         where: eq(documents.id, id),
@@ -331,8 +370,12 @@ export default async function document(fastify: FastifyInstance) {
         deletedCount: deletedEmbeddings.length,
       });
     } catch (error) {
-      fastify.logger.error(error, "Error deleting embeddings");
-      return reply.status(500).send({ error: "Internal server error" });
+      if (error instanceof z.ZodError) {
+        return reply.status(400).send({ error: "Document ID is required" });
+      } else {
+        fastify.logger.error(error, "Error deleting embeddings");
+        return reply.status(500).send({ error: "Internal server error" });
+      }
     }
   });
 }

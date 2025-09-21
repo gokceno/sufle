@@ -18,18 +18,18 @@
     "typescript": "^5.0.0"
   },
   "dependencies": {
-    "@sufle/embeddings": "*",
-    "@sufle/config": "*",
     "@fastify/auth": "^5.0.2",
     "@langchain/community": "^0.3.53",
     "@langchain/core": "^0.3.75",
     "@langchain/google-genai": "^0.1.0",
     "@libsql/client": "^0.15.14",
     "@paralleldrive/cuid2": "^2.2.2",
+    "@sufle/config": "*",
+    "@sufle/embeddings": "*",
     "drizzle-orm": "^0.44.5",
     "fastify": "^5.3.3",
     "luxon": "^3.6.1",
     "winston": "^3.17.0",
-    "zod": "^3.24.3"
+    "zod": "^4.1.11"
   }
 }

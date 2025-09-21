@@ -11,19 +11,19 @@
   "repository": "git+https://github.com/gokceno/sufle.git",
   "private": true,
   "dependencies": {
-    "@sufle/embeddings": "*",
-    "@sufle/config": "*",
     "@drizzle-team/brocli": "^0.11.0",
     "@google/generative-ai": "^0.24.1",
     "@langchain/community": "^0.3.22",
     "@langchain/core": "^0.3.66",
     "@paralleldrive/cuid2": "^2.2.2",
+    "@sufle/config": "*",
+    "@sufle/embeddings": "*",
     "dotenv": "^16.4.7",
     "langchain": "^0.3.9",
     "semantic-chunking": "^2.4.4",
     "toad-scheduler": "^3.0.1",
     "winston": "^3.17.0",
-    "zod": "^3.24.1"
+    "zod": "^4.1.11"
   },
   "devDependencies": {
     "drizzle-kit": "^0.30.1"

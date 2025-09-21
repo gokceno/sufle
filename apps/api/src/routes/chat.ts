@@ -1,3 +1,4 @@
+import * as z from "zod";
 import type { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
 import type {
   ChatCompletionRequestBody,
@@ -42,18 +43,28 @@ export default async function chat(fastify: FastifyInstance) {
       request: FastifyRequest<{ Body: ChatCompletionRequestBody }>,
       reply: FastifyReply
     ) => {
-      const { model, messages, stream } = request.body;
-
       try {
-        if (!model || !messages || messages.length === 0) {
-          return reply.status(400).send(missingRequiredFields());
-        }
+        const bodySchema = z.object({
+          model: z.string(),
+          messages: z.array(
+            z.object({
+              role: z.string(),
+              content: z.string(),
+            })
+          ),
+          stream: z.coerce.boolean(),
+        });
+
+        const { model, messages, stream }: z.infer<typeof bodySchema> =
+          bodySchema.parse(request.body);
+
         if (model !== outputModel.id) {
           return reply.status(404).send(noModelFound(model));
         }
-        if (stream) {
+        if (stream === true) {
           return reply.status(400).send(streamingNotSupported());
         }
+
         const userMessages = messages.filter((m) => m.role === "user");
         const lastUserMessage = userMessages[userMessages.length - 1];
 
@@ -96,8 +107,12 @@ export default async function chat(fastify: FastifyInstance) {
 
         return response;
       } catch (error) {
-        fastify.logger.error(error, "Error in chat completion");
-        return reply.status(500).send({ error: "Internal server error" });
+        if (error instanceof z.ZodError) {
+          return reply.status(400).send(missingRequiredFields());
+        } else {
+          fastify.logger.error(error, "Error in chat completion");
+          return reply.status(500).send({ error: "Error in chat completion" });
+        }
       }
     }
   );

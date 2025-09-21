@@ -1,7 +1,7 @@
 import "dotenv/config";
 import fs from "fs";
 import YAML from "yaml";
-import { z } from "zod";
+import * as z from "zod";
 import { setProperty, hasProperty } from "dot-prop";
 import type { KeysToCamelCase } from "./types";
 
@@ -33,7 +33,14 @@ const map = (config: object, startsWith: string = ""): object => {
   );
 };
 
-const raw = <T extends z.ZodType>(filename: string, schema: T): z.infer<T> => {
+const raw = <
+  T extends {
+    safeParse: (data: any) => { success: boolean; data?: any; error?: any };
+  }
+>(
+  filename: string,
+  schema: T
+): T extends z.ZodType<infer U, any, any> ? U : any => {
   const file = open(filename);
   const config: object = YAML.parse(file);
   const mappedConfig: object = map(config);
@@ -41,13 +48,19 @@ const raw = <T extends z.ZodType>(filename: string, schema: T): z.infer<T> => {
   if (!validatedConfig.success) {
     throw new Error(`Invalid config: ${validatedConfig.error}`);
   }
-  return validatedConfig.data;
+  return validatedConfig.data as T extends z.ZodType<infer U, any, any>
+    ? U
+    : any;
 };
 
-const parse = <T extends z.ZodType>(
+const parse = <
+  T extends {
+    safeParse: (data: any) => { success: boolean; data?: any; error?: any };
+  }
+>(
   filename: string,
   schema: T
-): z.infer<T> => {
+): KeysToCamelCase<T extends z.ZodType<infer U, any, any> ? U : any> => {
   const file = open(filename);
   const snakeToCamelCase = (str: string): string =>
     str.replace(/_([a-z])/g, (g) => g[1].toUpperCase());
@@ -73,14 +86,25 @@ const parse = <T extends z.ZodType>(
   if (!validatedConfig.success) {
     throw new Error(`Invalid config: ${validatedConfig.error}`);
   }
-  return convertKeysToCamelCase(validatedConfig.data);
+  return convertKeysToCamelCase(validatedConfig.data) as KeysToCamelCase<
+    T extends z.ZodType<infer U, any, any> ? U : any
+  >;
 };
 
-const create = <T extends z.ZodType>(configSchema: T) => {
+const create = <
+  T extends {
+    safeParse: (data: any) => { success: boolean; data?: any; error?: any };
+  }
+>(
+  configSchema: T
+) => {
   return {
-    parse: (filename: string): KeysToCamelCase<z.infer<T>> =>
+    parse: (
+      filename: string
+    ): KeysToCamelCase<T extends z.ZodType<infer U, any, any> ? U : any> =>
       parse(filename, configSchema),
-    raw: (filename: string): z.infer<T> => raw(filename, configSchema),
+    raw: (filename: string): T extends z.ZodType<infer U, any, any> ? U : any =>
+      raw(filename, configSchema),
   };
 };
 

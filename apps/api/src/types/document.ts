@@ -6,7 +6,7 @@ export interface CreateDocumentBody {
 }
 
 export interface GetDocumentParams {
-  documentId: string;
+  id: string;
   fileMd5Hash: string;
 }
 

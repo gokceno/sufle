@@ -1,6 +1,6 @@
 import { create as createConfig } from "@sufle/config";
 import type { CamelCaseConfig } from "@sufle/config/types";
-import { z } from "zod";
+import * as z from "zod";
 
 const configSchema = z.object({
   output_model: z.object({

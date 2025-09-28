@@ -27,6 +27,9 @@ const configSchema = z.object({
         model: z.string(),
         api_key: z.string(),
         temprature: z.number().max(1).min(0),
+        max_messages: z.number().default(32),
+        max_tokens: z.number().default(8000),
+        max_message_length: z.number().default(4000),
       }),
     }),
     vector_store: z.object({

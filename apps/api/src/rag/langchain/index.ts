@@ -21,7 +21,7 @@ const initialize = async () => {
 };
 
 const perform = async (
-  query: string,
+  messages: ChatMessage[],
   permissions?: Array<object>
 ): Promise<string> => {
   const { store, llm, filter } = await initialize();
@@ -29,6 +29,10 @@ const perform = async (
     ...config.rag.retriever.opts,
     ...filter(permissions),
   });
+
+  const chatContext = messages
+    .map((msg) => `${msg.role}: ${msg.content}`)
+    .join("\n");
 
   const chain = RunnableSequence.from([
     {
@@ -41,7 +45,7 @@ const perform = async (
     llm,
     new StringOutputParser(),
   ]);
-  return await chain.invoke(query);
+  return await chain.invoke(chatContext);
 };
 
 const tokens = (messages: ChatMessage[]): number => {
@@ -49,4 +53,25 @@ const tokens = (messages: ChatMessage[]): number => {
   return Math.ceil(totalChars / 4);
 };
 
-export { perform, tokens };
+const limits = (messages: ChatMessage[], config: Config) => {
+  const { maxMessages, maxTokens, maxMessageLength } = config.rag.chat.opts;
+  if (messages.length > maxMessages) {
+    throw new Error(
+      `Conversation is too long. Max number of messages exceed ${maxMessages}`
+    );
+  }
+  for (const message of messages) {
+    if (message.content.length > maxMessageLength) {
+      throw new Error(`Max message length exceeds ${maxMessageLength}`);
+    }
+  }
+  const totalTokens = tokens(messages);
+  if (totalTokens > maxTokens) {
+    throw new Error(
+      `Conversation is too long. Token count exceeds ${maxTokens}`
+    );
+  }
+  return null;
+};
+
+export { perform, tokens, limits };

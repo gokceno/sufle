@@ -61,18 +61,16 @@ export default async function chat(fastify: FastifyInstance) {
           return reply.status(400).send(streamingNotSupported());
         }
 
-        const userMessages = messages.filter((m) => m.role === "user");
-        const lastUserMessage = userMessages[userMessages.length - 1];
+        const {
+          perform,
+          tokens: countTokens,
+          limits: checkLimits,
+        } = rag(config.rag.provider);
 
-        if (!lastUserMessage) {
-          return reply.status(400).send(noUserMessage());
-        }
+        // Validate against limits, throw an error otherwise.
+        checkLimits(messages, config);
 
-        const { perform, tokens } = rag(config.rag.provider);
-        const ragResponse = await perform(
-          lastUserMessage.content,
-          request.permissions
-        );
+        const ragResponse = await perform(messages, request.permissions);
 
         const response: ChatCompletionResponse = {
           id: `chatcmpl-${createId()}`,
@@ -90,8 +88,8 @@ export default async function chat(fastify: FastifyInstance) {
             },
           ],
           usage: {
-            prompt_tokens: tokens(messages),
-            completion_tokens: tokens([
+            prompt_tokens: countTokens(messages),
+            completion_tokens: countTokens([
               { role: "assistant", content: ragResponse },
             ]),
             total_tokens: 0,
@@ -106,8 +104,8 @@ export default async function chat(fastify: FastifyInstance) {
         if (error instanceof z.ZodError) {
           return reply.status(400).send(missingRequiredFields());
         } else {
-          fastify.logger.error(error, "Error in chat completion");
-          return reply.status(500).send({ error: "Error in chat completion" });
+          fastify.logger.error(error.message);
+          return reply.status(500).send({ error: error.message });
         }
       }
     }

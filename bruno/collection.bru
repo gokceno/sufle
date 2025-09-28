@@ -1,9 +1,7 @@
 auth {
-  mode: apikey
+  mode: bearer
 }
 
-auth:apikey {
-  key: x-api-key
-  value: 111-111-111
-  placement: header
+auth:bearer {
+  token: 111-111-111
 }

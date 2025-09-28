@@ -1,5 +1,11 @@
 # @sufle/api
 
+## 0.3.1
+
+### Patch Changes
+
+- 4dfc4ed: Included entire chat context in the RAG pipeline. Added validations to chat completions to prevent abuse.
+
 ## 0.3.0
 
 ### Minor Changes

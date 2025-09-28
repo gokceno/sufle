@@ -8,22 +8,23 @@ import { createId } from "@paralleldrive/cuid2";
 import { factory as rag } from "../rag";
 import {
   parse,
-  raw,
   missingRequiredFields,
   noModelFound,
-  noUserMessage,
   streamingNotSupported,
 } from "../utils";
-import type { Config, RawConfig } from "../utils";
+import type { Config } from "../utils";
 
 const config: Config = parse(process.env.CONFIG_PATH || "sufle.yml");
-const rawConfig: RawConfig = raw(process.env.CONFIG_PATH || "sufle.yml");
 
-const outputModel = {
-  ...rawConfig.output_model,
-  supports_streaming: false,
-  object: "model" as const,
-  created: Math.floor(Date.now() / 1000),
+const commonModelCapabilities = {
+  vision: false,
+  function_calling: false,
+  tool_calling: false,
+  code_interpreter: false,
+  retrieval: false,
+  image_generation: false,
+  audio: false,
+  multimodal: false,
 };
 
 export default async function chat(fastify: FastifyInstance) {
@@ -41,7 +42,7 @@ export default async function chat(fastify: FastifyInstance) {
     ) => {
       try {
         const bodySchema = z.object({
-          model: z.string(),
+          model: z.string().max(128),
           messages: z.array(
             z.object({
               role: z.string(),
@@ -54,7 +55,11 @@ export default async function chat(fastify: FastifyInstance) {
         const { model, messages, stream }: z.infer<typeof bodySchema> =
           bodySchema.parse(request.body);
 
-        if (model !== outputModel.id) {
+        const outputModelConfig = config.outputModels.find(
+          (m) => m.id === model
+        );
+        if (!outputModelConfig) {
+          fastify.logger.error(`No model found with name ${model}`);
           return reply.status(404).send(noModelFound(model));
         }
         if (stream === true) {
@@ -68,15 +73,19 @@ export default async function chat(fastify: FastifyInstance) {
         } = rag(config.rag.provider);
 
         // Validate against limits, throw an error otherwise.
-        checkLimits(messages, config);
+        checkLimits(messages, outputModelConfig);
 
-        const ragResponse = await perform(messages, request.permissions);
+        const ragResponse = await perform(
+          outputModelConfig,
+          messages,
+          request.permissions
+        );
 
         const response: ChatCompletionResponse = {
           id: `chatcmpl-${createId()}`,
           object: "chat.completion",
           created: Math.floor(Date.now() / 1000),
-          model: outputModel.id,
+          model,
           choices: [
             {
               index: 0,
@@ -115,13 +124,22 @@ export default async function chat(fastify: FastifyInstance) {
     "/v1/models",
     async (request: FastifyRequest, reply: FastifyReply) => {
       try {
+        const data = config.outputModels.map((m) => ({
+          id: m.id,
+          owned_by: m.ownedBy,
+          supports_streaming: false,
+          object: "model" as const,
+          created: Math.floor(Date.now() / 1000),
+          capabilities: { ...commonModelCapabilities },
+        }));
         return {
           object: "list",
-          data: [outputModel],
+          data,
         };
       } catch (error) {
-        fastify.logger.error(error, "Error fetching models");
-        return reply.status(500).send({ error: "Internal server error" });
+        fastify.logger.error("Error fetching models");
+        fastify.logger.debug(error);
+        return reply.status(500).send({ error: "Error fetching models" });
       }
     }
   );
@@ -134,17 +152,31 @@ export default async function chat(fastify: FastifyInstance) {
       request: FastifyRequest<{ Params: { model: string } }>,
       reply: FastifyReply
     ) => {
-      const { model } = request.params;
+      const paramsSchema = z.object({
+        model: z.string().max(128),
+      });
+
+      const { model } = paramsSchema.parse(request.params);
 
       try {
-        if (model === outputModel.id) {
-          return outputModel;
+        const [data] = config.outputModels
+          .filter((m) => m.id === model)
+          .map((m) => ({
+            id: m.id,
+            owned_by: m.ownedBy,
+            supports_streaming: false,
+            object: "model" as const,
+            created: Math.floor(Date.now() / 1000),
+            capabilities: { ...commonModelCapabilities },
+          }));
+        if (!data) {
+          return reply.status(404).send(noModelFound(model));
         }
-
-        return reply.status(404).send(noModelFound(model));
+        return { ...data };
       } catch (error) {
         fastify.logger.error(error, "Error fetching model");
-        return reply.status(500).send({ error: "Internal server error" });
+        fastify.logger.debug(error);
+        return reply.status(500).send({ error: "Error fetching model" });
       }
     }
   );

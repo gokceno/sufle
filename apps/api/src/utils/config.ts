@@ -3,10 +3,23 @@ import type { CamelCaseConfig } from "@sufle/config/types";
 import * as z from "zod";
 
 const configSchema = z.object({
-  output_model: z.object({
-    id: z.string(),
-    owned_by: z.string(),
-  }),
+  output_models: z.array(
+    z.object({
+      id: z.string().max(128),
+      owned_by: z.string(),
+      chat: z.object({
+        provider: z.enum(["google"]),
+        opts: z.object({
+          model: z.string(),
+          api_key: z.string(),
+          temprature: z.number().max(1).min(0),
+          max_messages: z.number().default(32),
+          max_tokens: z.number().default(8000),
+          max_message_length: z.number().default(4000),
+        }),
+      }),
+    })
+  ),
   rag: z.object({
     provider: z.enum(["langchain"]),
     embeddings: z.object({
@@ -19,17 +32,6 @@ const configSchema = z.object({
     retriever: z.object({
       opts: z.object({
         k: z.number(),
-      }),
-    }),
-    chat: z.object({
-      provider: z.enum(["google"]),
-      opts: z.object({
-        model: z.string(),
-        api_key: z.string(),
-        temprature: z.number().max(1).min(0),
-        max_messages: z.number().default(32),
-        max_tokens: z.number().default(8000),
-        max_message_length: z.number().default(4000),
       }),
     }),
     vector_store: z.object({

@@ -12,19 +12,23 @@ import { prompt } from "./prompt";
 
 const config: Config = parse(process.env.CONFIG_PATH || "sufle.yml");
 
-const initialize = async () => {
+const initialize = async (outputModelConfig: object) => {
   const { initialize, filter } = await storeFactory(
     config.rag.vectorStore.provider
   );
-  const llm = chatFactory(config.rag.chat.provider, config.rag.chat.opts);
+  const llm = chatFactory(
+    outputModelConfig.chat.provider,
+    outputModelConfig.chat.opts
+  );
   return { store: initialize(), llm, filter };
 };
 
 const perform = async (
+  outputModelConfig: object,
   messages: ChatMessage[],
   permissions?: Array<object>
 ): Promise<string> => {
-  const { store, llm, filter } = await initialize();
+  const { store, llm, filter } = await initialize(outputModelConfig);
   const retriever = store.asRetriever({
     ...config.rag.retriever.opts,
     ...filter(permissions),
@@ -53,8 +57,9 @@ const tokens = (messages: ChatMessage[]): number => {
   return Math.ceil(totalChars / 4);
 };
 
-const limits = (messages: ChatMessage[], config: Config) => {
-  const { maxMessages, maxTokens, maxMessageLength } = config.rag.chat.opts;
+const limits = (messages: ChatMessage[], outputModelConfig: object) => {
+  const { maxMessages, maxTokens, maxMessageLength } =
+    outputModelConfig.chat.opts;
   if (messages.length > maxMessages) {
     throw new Error(
       `Conversation is too long. Max number of messages exceed ${maxMessages}`

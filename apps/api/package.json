@@ -33,7 +33,7 @@
     "luxon": "^3.6.1",
     "winston": "^3.17.0",
     "zod": "^4.1.11",
-    "@sufle/tool-weather": "*",
-    "@sufle/tool-exchange-rates": "*"
+    "@sufle/tool-weather": "0.0.1",
+    "@sufle/tool-exchange-rates": "0.1.0"
   }
 }

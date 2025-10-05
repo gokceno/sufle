@@ -9,6 +9,10 @@ db.sqlite
 **/sample/data
 *.conf
 
+# Bruno
+bruno/environments/*
+!bruno/environments/Local.bru
+
 # Logs
 logs
 *.log

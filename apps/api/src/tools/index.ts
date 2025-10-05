@@ -1,2 +1,2 @@
-export * as weather from "./weather";
-export * as exchangeRates from "./exchange-rates";
+export * as weather from "@sufle/tool-weather";
+export * as exchangeRates from "@sufle/tool-exchange-rates";

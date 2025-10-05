@@ -19,27 +19,28 @@ const initialize = async (outputModelConfig: object) => {
     (outputModelConfig as any).chat.opts
   );
 
-  const enabledTools = config.tools.map((configuredTool) => {
-    const matchedTool = Object.values(availableTools).find(
-      ({ name }) => name === configuredTool.tool
-    );
-    if (typeof matchedTool?.create !== "function") {
-      throw new Error(`Configured tool: ${configuredTool} is not available`);
-    }
-    const { provider, schema, name, description } = matchedTool.create({
-      ...configuredTool.opts,
-    });
-    return {
-      tool: tool(async (input: any) => provider(input), {
-        schema,
-        name,
-        description,
-        responseFormat: "artifact",
-      }),
-      name: matchedTool.name,
-      description: matchedTool.description,
-    };
-  });
+  const enabledTools =
+    config.tools?.map((configuredTool) => {
+      const matchedTool = Object.values(availableTools).find(
+        ({ name }) => name === configuredTool.tool
+      );
+      if (typeof matchedTool?.create !== "function") {
+        throw new Error(`Configured tool: ${configuredTool} is not available`);
+      }
+      const { provider, schema, name, description } = matchedTool.create({
+        ...configuredTool.opts,
+      });
+      return {
+        tool: tool(async (input: any) => provider(input), {
+          schema,
+          name,
+          description,
+          responseFormat: "artifact",
+        }),
+        name: matchedTool.name,
+        description: matchedTool.description,
+      };
+    }) || [];
 
   const tools = enabledTools.map((t) => t.tool);
   const llm = baseLlm.bindTools([...tools]);

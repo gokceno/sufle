@@ -32,6 +32,8 @@
     "langchain": "^0.3.34",
     "luxon": "^3.6.1",
     "winston": "^3.17.0",
-    "zod": "^4.1.11"
+    "zod": "^4.1.11",
+    "@sufle/tool-weather": "*",
+    "@sufle/tool-exchange-rates": "*"
   }
 }

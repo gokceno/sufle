@@ -1,0 +1,19 @@
+{
+  "name": "@sufle/tool-weather",
+  "type": "module",
+  "version": "0.0.1",
+  "main": "src/index.ts",
+  "module": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "license": "MIT",
+  "packageManager": "bun@1.2.13",
+  "repository": "git+https://github.com/gokceno/sufle.git",
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "zod": "^4.1.11"
+  }
+}

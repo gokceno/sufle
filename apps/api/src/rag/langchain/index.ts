@@ -30,7 +30,7 @@ const initialize = async (outputModelConfig: object) => {
       ...configuredTool.opts,
     });
     return {
-      tool: tool(provider, {
+      tool: tool(async (input: any) => provider(input), {
         schema,
         name,
         description,

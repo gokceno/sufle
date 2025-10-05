@@ -9,7 +9,8 @@ const create = (opts) => {
   const schema = z.object({
     city: z.string().describe("Name of the city to find the weather for."),
   });
-  const provider = async ({ city }: { city: string }) => {
+  const provider = async (input: any) => {
+    const { city } = schema.parse(input);
     const { lat, lon } = await geocode(city, opts as Opts);
     const { weather, main } = await find(lat, lon, opts as Opts);
     return {

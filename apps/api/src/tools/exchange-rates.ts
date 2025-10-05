@@ -9,7 +9,8 @@ const create = (opts) => {
       .string()
       .describe("Name of the currency to get the exchange rate for."),
   });
-  const provider = async ({ currency }: { currency: string }) => {
+  const provider = async (input: any) => {
+    const { currency } = schema.parse(input);
     return {
       sourceCurrency: currency,
       targetCurrency: "TRL",

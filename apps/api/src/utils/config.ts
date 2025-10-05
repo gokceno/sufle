@@ -41,11 +41,7 @@ const configSchema = z.object({
   tools: z.array(
     z.object({
       tool: z.string(),
-      opts: z
-        .object({
-          api_key: z.string().optional(),
-        })
-        .optional(),
+      opts: z.record(z.string(), z.any()).optional(),
     })
   ),
   permissions: z.array(

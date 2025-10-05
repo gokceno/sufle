@@ -1,5 +1,17 @@
 # @sufle/api
 
+## 0.4.0
+
+### Minor Changes
+
+- 78699d3: Moved tools to individual packages. Tool calling became optional.
+- dbfa041: Sufle now offers multiple output models with different inference configurations. It's now possible to use different vendors for output models.
+- dfd2ec5: Implemented tool calling with two embedded tools.
+
+### Patch Changes
+
+- e1f050d: Fixed type errors.
+
 ## 0.3.1
 
 ### Patch Changes

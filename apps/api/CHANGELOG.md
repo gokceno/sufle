@@ -1,5 +1,11 @@
 # @sufle/api
 
+## 0.4.1
+
+### Patch Changes
+
+- Updated versions.
+
 ## 0.4.0
 
 ### Minor Changes

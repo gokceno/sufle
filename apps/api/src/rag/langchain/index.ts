@@ -1,32 +1,14 @@
-import { z } from "zod";
 import { factory as chatFactory } from "../../chat";
 import { parse } from "../../utils";
 import { factory as storeFactory } from "../../stores";
 import type { Config, RetrievedDoc } from "../../types";
 import type { ChatMessage } from "../../types/chat";
-import { prompt } from "./prompt";
+import { create as createPrompt } from "./prompt";
+import * as availableTools from "../../tools";
 import { createToolCallingAgent, AgentExecutor } from "langchain/agents";
 import { tool } from "@langchain/core/tools";
 
 const config: Config = parse(process.env.CONFIG_PATH || "sufle.yml");
-
-const weatherSchema = z.object({
-  city: z.string().describe("Name of the city to find the weather for."),
-});
-
-const weatherTool = tool(
-  (input) => {
-    const { city } = input as {
-      city: string;
-    };
-    return `${city} şehrinde hava 38.5 derecedir.`;
-  },
-  {
-    name: "weather",
-    description: "Can tell about weather by on city name.",
-    schema: weatherSchema,
-  }
-);
 
 const initialize = async (outputModelConfig: object) => {
   const { initialize, filter } = await storeFactory(
@@ -37,9 +19,36 @@ const initialize = async (outputModelConfig: object) => {
     (outputModelConfig as any).chat.opts
   );
 
-  const llm = baseLlm.bindTools([weatherTool]);
+  const enabledTools = config.tools.map((configuredTool) => {
+    const matchedTool = Object.values(availableTools).find(
+      ({ name }) => name === configuredTool.tool
+    );
+    if (typeof matchedTool?.create !== "function") {
+      throw new Error(`Configured tool: ${configuredTool} is not available`);
+    }
+    const { provider, schema, name, description } = matchedTool.create({
+      ...configuredTool.opts,
+    });
+    return {
+      tool: tool(provider, {
+        schema,
+        name,
+        description,
+        responseFormat: "artifact",
+      }),
+      name: matchedTool.name,
+      description: matchedTool.description,
+    };
+  });
 
-  return { store: initialize(), llm, filter };
+  const tools = enabledTools.map((t) => t.tool);
+  const llm = baseLlm.bindTools([...tools]);
+
+  const prompt = createPrompt(
+    enabledTools.map((t) => ({ name: t.name, description: t.description }))
+  );
+
+  return { store: initialize(), llm, filter, tools, prompt };
 };
 
 const perform = async (
@@ -47,7 +56,9 @@ const perform = async (
   messages: ChatMessage[],
   permissions?: Array<object>
 ): Promise<string> => {
-  const { store, llm, filter } = await initialize(outputModelConfig);
+  const { store, llm, filter, tools, prompt } = await initialize(
+    outputModelConfig
+  );
   const retriever = store.asRetriever({
     ...config.rag.retriever.opts,
     ...filter(permissions),
@@ -64,13 +75,13 @@ const perform = async (
 
   const agent = createToolCallingAgent({
     llm,
-    tools: [weatherTool],
+    tools,
     prompt,
   });
 
   const agentExecutor = new AgentExecutor({
     agent,
-    tools: [weatherTool],
+    tools,
   });
 
   const result = await agentExecutor.invoke({

@@ -38,7 +38,16 @@ const configSchema = z.object({
       provider: z.enum(["libsql"]),
     }),
   }),
-  tools: z.array(z.string()),
+  tools: z.array(
+    z.object({
+      tool: z.string(),
+      opts: z
+        .object({
+          api_key: z.string().optional(),
+        })
+        .optional(),
+    })
+  ),
   permissions: z.array(
     z.object({
       users: z.array(z.email()),

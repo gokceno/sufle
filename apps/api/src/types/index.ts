@@ -14,3 +14,10 @@ export type WorkspacePermission = {
 export type RetrievedDoc = {
   pageContent: string;
 };
+
+export type Tool = {
+  provider?: Promise<object>;
+  name: string;
+  description: string;
+  responseFormat?: "artifact";
+};

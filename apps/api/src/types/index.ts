@@ -1,4 +1,4 @@
-export type { Config, Logger } from "../utils";
+export type { Config, RawConfig, Logger } from "../utils";
 
 export type ConfigPermission = {
   users: string[];

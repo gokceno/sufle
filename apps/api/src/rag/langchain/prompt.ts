@@ -4,7 +4,7 @@ import {
 } from "@langchain/core/prompts";
 import { Tool } from "../../types";
 
-const create = (tools: Array<Tool>) => {
+const create = (tools: Array<any>) => {
   const systemPrompt: string = `
     You are an intelligent assistant called **Sufle**.
 

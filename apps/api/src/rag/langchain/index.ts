@@ -1,14 +1,16 @@
 import { factory as chatFactory } from "../../chat";
-import { parse } from "../../utils";
+import { parse, raw } from "../../utils";
 import { factory as storeFactory } from "../../stores";
-import type { Config, RetrievedDoc } from "../../types";
+import type { Config, RawConfig, RetrievedDoc } from "../../types";
 import type { ChatMessage } from "../../types/chat";
 import { create as createPrompt } from "./prompt";
 import * as availableTools from "../../tools";
 import { createToolCallingAgent, AgentExecutor } from "langchain/agents";
 import { tool } from "@langchain/core/tools";
+import { MultiServerMCPClient } from "@langchain/mcp-adapters";
 
 const config: Config = parse(process.env.CONFIG_PATH || "sufle.yml");
+const rawConfig: RawConfig = raw(process.env.CONFIG_PATH || "sufle.yml");
 
 const initialize = async (outputModelConfig: object) => {
   const { initialize, filter } = await storeFactory(
@@ -19,35 +21,35 @@ const initialize = async (outputModelConfig: object) => {
     (outputModelConfig as any).chat.opts
   );
 
-  const enabledTools =
-    config.tools?.map((configuredTool) => {
-      const matchedTool = Object.values(availableTools).find(
-        ({ name }) => name === configuredTool.tool
-      );
-      if (typeof matchedTool?.create !== "function") {
-        throw new Error(`Configured tool: ${configuredTool} is not available`);
-      }
-      const { provider, schema, name, description } = matchedTool.create({
-        ...configuredTool.opts,
-      });
-      return {
-        tool: tool(async (input: any) => provider(input), {
-          schema,
-          name,
-          description,
-          responseFormat: "artifact",
-        }),
-        name: matchedTool.name,
-        description: matchedTool.description,
-      };
-    }) || [];
+  const localTools = config.tools.map((configuredTool) => {
+    const matchedTool = Object.values(availableTools).find(
+      ({ name }) => name === configuredTool.tool
+    );
+    if (typeof matchedTool?.create !== "function") {
+      throw new Error(`Configured tool: ${configuredTool} is not available`);
+    }
+    const { provider, schema, name, description } = matchedTool.create({
+      ...configuredTool.opts,
+    });
+    return tool(async (input: any) => provider(input), {
+      schema,
+      name,
+      description,
+      responseFormat: "artifact",
+    });
+  });
 
-  const tools = enabledTools.map((t) => t.tool);
-  const llm = baseLlm.bindTools([...tools]);
-
-  const prompt = createPrompt(
-    enabledTools.map((t) => ({ name: t.name, description: t.description }))
+  const mcpClient = new MultiServerMCPClient(
+    rawConfig.mcp_servers.reduce((acc, s) => {
+      acc[s.server] = { command: s.command, args: s.args, env: s.env };
+      return acc;
+    }, {} as Record<string, any>)
   );
+  const mcpTools = await mcpClient.getTools();
+
+  const tools = [...localTools, ...mcpTools];
+  const prompt = createPrompt(tools);
+  const llm = baseLlm.bindTools(tools);
 
   return { store: initialize(), llm, filter, tools, prompt };
 };

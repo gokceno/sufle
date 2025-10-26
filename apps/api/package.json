@@ -22,18 +22,19 @@
     "@langchain/community": "^0.3.56",
     "@langchain/core": "^0.3.77",
     "@langchain/google-genai": "^0.2.18",
+    "@langchain/mcp-adapters": "^1.0.0",
     "@langchain/openai": "^0.6.13",
     "@libsql/client": "^0.15.14",
     "@paralleldrive/cuid2": "^2.2.2",
     "@sufle/config": "*",
     "@sufle/embeddings": "*",
+    "@sufle/tool-exchange-rates": "0.1.0",
+    "@sufle/tool-weather": "0.0.1",
     "drizzle-orm": "^0.44.5",
     "fastify": "^5.3.3",
     "langchain": "^0.3.34",
     "luxon": "^3.6.1",
     "winston": "^3.17.0",
-    "zod": "^4.1.11",
-    "@sufle/tool-weather": "0.0.1",
-    "@sufle/tool-exchange-rates": "0.1.0"
+    "zod": "^4.1.11"
   }
 }

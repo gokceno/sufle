@@ -1,5 +1,11 @@
 # @sufle/api
 
+## 0.5.0
+
+### Minor Changes
+
+- 24f180a: Added MCP Server support.
+
 ## 0.4.1
 
 ### Patch Changes

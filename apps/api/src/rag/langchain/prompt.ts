@@ -82,6 +82,7 @@ const create = (tools: Array<any>) => {
     ### Step 4: Response Planning
 
     Based on your detailed Context Analysis (and any tool results), plan the structure of your response:
+
     - Outline the main sections of your response.
     - Decide how to present the synthesized information, **integrating direct quotes extensively** and clearly explaining relationships.
     - Plan how to address uncertainties, linking them to missing or ambiguous quotable information.

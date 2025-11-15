@@ -4,7 +4,13 @@ import {
 } from "@langchain/core/prompts";
 import { Tool } from "../../types";
 
-const create = (tools: Array<any>) => {
+const create = (
+  tools: Array<any>,
+  mcpInstructions: Array<{
+    name: string;
+    instructions: string | undefined;
+  }>
+) => {
   const systemPrompt: string = `
     You are an intelligent assistant called **Sufle**.
 
@@ -21,9 +27,7 @@ const create = (tools: Array<any>) => {
 
     ### Step 1: Source of Truth Decision
 
-    - If the user query is about a tool's capabilities which are defined under "available tools" you MUST immediately call that tool with its required parameters.
-      - Do not attempt to answer from context.
-      - Do not ask the user for the city name if it is already provided in the query.
+    - If the user query is about a tool's capabilities which are defined under "Available Tools" or "Specific Instructions for Tools" you MUST immediately call that tool with its required parameters. Do not attempt to answer from context.
 
     - For all other queries:
       - If the query can be answered from retrieved context, begin with **context analysis**.
@@ -62,20 +66,28 @@ const create = (tools: Array<any>) => {
 
     ### Step 3: Tool Use Rules
 
-    **Available Tools:**
-
-    ${tools
-      .map((t: Tool) => {
-        `- "` + t.name + `": ` + t.description;
-      })
-      .join("\n")}
-
-    **Instructions for Tools:**
+    **General Instructions for Tools:**
 
     - Do NOT say you cannot do something if you have a relevant tool available.
     - Always try to use tools first before saying you don’t have capabilities.
     - Only after using tools should you provide your response based on the tool results.
     - If both tools and context are relevant, combine them in your response.
+    - Carefully review the specific instructions for each tool.
+
+    #### Available Tools
+
+    ${tools
+      .map((t: Tool) => {
+        return `- "` + t.name + `": ` + t.description;
+      })
+      .join("\n")}
+
+    #### Specific Instructions for Tools
+
+    ${mcpInstructions
+      .filter((t) => !!t.instructions)
+      .map((t) => t.instructions)
+      .join("\n\n")}
 
     ---
 

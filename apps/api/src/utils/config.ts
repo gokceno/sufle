@@ -53,6 +53,7 @@ const configSchema = z.object({
         command: z.string(),
         args: z.array(z.string()).optional(),
         env: z.record(z.string(), z.any()).optional(),
+        instructions: z.string().optional(),
       })
     )
     .default([]),

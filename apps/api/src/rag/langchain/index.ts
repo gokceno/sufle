@@ -39,16 +39,28 @@ const initialize = async (outputModelConfig: object) => {
     });
   });
 
-  const mcpClient = new MultiServerMCPClient(
-    rawConfig.mcp_servers.reduce((acc, s) => {
-      acc[s.server] = { command: s.command, args: s.args, env: s.env };
-      return acc;
-    }, {} as Record<string, any>)
-  );
-  const mcpTools = await mcpClient.getTools();
+  const mcpServers: Record<string, any> = {};
+  const mcpInstructions: Array<{ name: string; instructions: any }> = [];
 
+  for (const s of rawConfig.mcp_servers) {
+    mcpServers[s.server] = {
+      command: s.command,
+      args: s.args,
+      env: s.env,
+      instructions: s.instructions,
+    };
+    mcpInstructions.push({
+      name: s.server,
+      instructions: s.instructions,
+    });
+  }
+
+  const mcpClient = new MultiServerMCPClient(mcpServers);
+  const mcpTools = await mcpClient.getTools();
   const tools = [...localTools, ...mcpTools];
-  const prompt = createPrompt(tools);
+
+  const prompt = createPrompt(tools, mcpInstructions);
+
   const llm = baseLlm.bindTools(tools);
 
   return { store: initialize(), llm, filter, tools, prompt };

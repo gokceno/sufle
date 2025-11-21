@@ -1,5 +1,11 @@
 # @sufle/cli
 
+## 0.2.1
+
+### Patch Changes
+
+- b972346: Added txt and md files to the allow list and allowed them to pass the conversion step as they are already plain text files.
+
 ## 0.2.0
 
 ### Minor Changes

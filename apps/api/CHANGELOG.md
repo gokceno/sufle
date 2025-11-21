@@ -1,5 +1,11 @@
 # @sufle/api
 
+## 0.5.1
+
+### Patch Changes
+
+- 38351aa: Ability to add instructions to MCP servers via the config file.
+
 ## 0.5.0
 
 ### Minor Changes

@@ -2,7 +2,11 @@ import { z } from "zod";
 import { fetchCurrency } from "kurlar";
 
 const name: string = "exchangeRates";
-const description: string = `Get exchange rate information for input currency. When asked about exchange rates for ANY currency, you MUST call the "exchangeRates" tool with the 3-letter currency code.`;
+const description: string = `
+  Get exchange rate information for input currency.
+  When asked about exchange rates for ANY currency, you MUST call the "exchangeRates" tool with the 3-letter currency code.
+  This tool will give the exchange rate for the input currency against Turkish Lira (TRL).
+`;
 
 const create = (opts) => {
   const schema = z.object({

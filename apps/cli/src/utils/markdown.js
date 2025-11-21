@@ -1,7 +1,10 @@
-const allowedTypes = ["pdf", "docx"];
+const allowedTypes = ["pdf", "docx", "txt", "md"];
 const executableName = "markitdown";
 
 const convert = (fileContents, { logger }) => {
+  if (typeof fileContents === "string") {
+    return fileContents;
+  }
   if (typeof Bun === "undefined") {
     throw new Error("This process requires Bun.");
   }

@@ -1,8 +1,8 @@
-import * as fs from 'fs';
-import * as path from 'path';
-import crypto from 'node:crypto';
+import * as fs from "fs";
+import * as path from "path";
+import crypto from "node:crypto";
 
-const textTypes = ['txt', 'csv', 'json', 'xml', 'html', 'md', 'log'];
+const textTypes = ["txt", "csv", "json", "xml", "html", "md", "log"];
 
 const list = (dir, fileTypes, { logger }) => {
   let results = [];
@@ -34,7 +34,7 @@ const hash = (files, { logger }) => {
   return files.map((file) => {
     try {
       const data = fs.readFileSync(file);
-      const hash = crypto.createHash('md5').update(data).digest('hex');
+      const hash = crypto.createHash("md5").update(data).digest("hex");
       return { file, hash };
     } catch (error) {
       if (logger) logger.warn(`Error hashing file ${file}: ${error.message}`);
@@ -46,13 +46,13 @@ const hash = (files, { logger }) => {
 const open = (file, hash, { logger }) => {
   try {
     const data = fs.readFileSync(file);
-    const fileHash = crypto.createHash('md5').update(data).digest('hex');
+    const fileHash = crypto.createHash("md5").update(data).digest("hex");
     if (fileHash !== hash) {
-      throw new Error('File hash does not match expected hash. Skipping.');
+      throw new Error("File hash does not match expected hash. Skipping.");
     }
     const ext = path.extname(file).slice(1).toLowerCase();
     const contents = textTypes.includes(ext)
-      ? fs.readFileSync(file, 'utf8')
+      ? fs.readFileSync(file, "utf8")
       : fs.readFileSync(file);
     return contents;
   } catch (error) {

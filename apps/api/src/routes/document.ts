@@ -87,7 +87,7 @@ export default async function document(fastify: FastifyInstance) {
   }>("/documents", async (request, reply) => {
     try {
       const bodySchema = z.object({
-        workspaceId: z.cuid2(),
+        workspaceId: z.string(),
         fileRemote: z.string(),
         filePath: z.string(),
       });

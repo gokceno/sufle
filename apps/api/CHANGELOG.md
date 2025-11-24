@@ -1,5 +1,11 @@
 # @sufle/api
 
+## 0.5.4
+
+### Patch Changes
+
+- Accept string workspaceId in documents route.
+
 ## 0.5.3
 
 ### Patch Changes

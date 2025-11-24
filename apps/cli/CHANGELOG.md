@@ -1,5 +1,11 @@
 # @sufle/cli
 
+## 0.2.2
+
+### Patch Changes
+
+- Dockerfile and compose file refactor.
+
 ## 0.2.1
 
 ### Patch Changes

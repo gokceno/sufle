@@ -1,5 +1,14 @@
 FROM oven/bun:1 AS install
 
+RUN apt-get update && apt-get install -y \
+    curl \
+    unzip \
+    build-essential \
+    python3 \
+    pkg-config \
+    libvips-dev \
+    && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
 
 # Copy workspace configuration and source files

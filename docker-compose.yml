@@ -73,6 +73,7 @@ services:
     volumes:
       - api_data:/app/apps/api/db
       - ./apps/api/sufle.yml:/app/apps/api/sufle.yml
+      - ./apps/api/sample/data:/app/apps/api/data
     restart: unless-stopped
 
 volumes:

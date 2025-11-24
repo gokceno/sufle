@@ -75,6 +75,8 @@ services:
       - ./apps/api/sufle.yml:/app/apps/api/sufle.yml
       - ./apps/api/sample/data:/app/apps/api/data
     restart: unless-stopped
+    ports:
+      - 3000
 
 volumes:
   cli_data:

@@ -45,7 +45,8 @@ const configSchema = z.object({
         opts: z.record(z.string(), z.any()).optional(),
       })
     )
-    .default([]),
+    .default([])
+    .optional(),
   mcp_servers: z
     .array(
       z.object({
@@ -56,7 +57,8 @@ const configSchema = z.object({
         instructions: z.string().optional(),
       })
     )
-    .default([]),
+    .default([])
+    .optional(),
   permissions: z.array(
     z.object({
       users: z.array(z.email()),

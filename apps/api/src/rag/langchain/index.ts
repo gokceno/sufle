@@ -21,45 +21,50 @@ const initialize = async (outputModelConfig: object) => {
     (outputModelConfig as any).chat.opts
   );
 
-  const localTools = config.tools.map((configuredTool) => {
-    const matchedTool = Object.values(availableTools).find(
-      ({ name }) => name === configuredTool.tool
-    );
-    if (typeof matchedTool?.create !== "function") {
-      throw new Error(`Configured tool: ${configuredTool} is not available`);
-    }
-    const { provider, schema, name, description } = matchedTool.create({
-      ...configuredTool.opts,
-    });
-    return tool(async (input: any) => provider(input), {
-      schema,
-      name,
-      description,
-      responseFormat: "artifact",
-    });
-  });
+  const localTools =
+    config.tools?.map((configuredTool) => {
+      const matchedTool = Object.values(availableTools).find(
+        ({ name }) => name === configuredTool.tool
+      );
+      if (typeof matchedTool?.create !== "function") {
+        throw new Error(`Configured tool: ${configuredTool} is not available`);
+      }
+      const { provider, schema, name, description } = matchedTool.create({
+        ...configuredTool.opts,
+      });
+      return tool(async (input: any) => provider(input), {
+        schema,
+        name,
+        description,
+        responseFormat: "artifact",
+      });
+    }) || [];
 
   const mcpServers: Record<string, any> = {};
   const mcpInstructions: Array<{ name: string; instructions: any }> = [];
+  let mcpTools: any = [];
 
-  for (const s of rawConfig.mcp_servers) {
-    mcpServers[s.server] = {
-      command: s.command,
-      args: s.args,
-      env: s.env,
-      instructions: s.instructions,
-    };
-    mcpInstructions.push({
-      name: s.server,
-      instructions: s.instructions,
-    });
+  if (rawConfig.mcp_servers && rawConfig.mcp_servers.length > 0) {
+    for (const s of rawConfig.mcp_servers) {
+      mcpServers[s.server] = {
+        command: s.command,
+        args: s.args,
+        env: s.env,
+        instructions: s.instructions,
+      };
+      mcpInstructions.push({
+        name: s.server,
+        instructions: s.instructions,
+      });
+    }
+    if (Object.keys(mcpServers).length > 0) {
+      const mcpClient = new MultiServerMCPClient(mcpServers);
+      mcpTools = await mcpClient.getTools();
+    }
   }
-
-  const mcpClient = new MultiServerMCPClient(mcpServers);
-  const mcpTools = await mcpClient.getTools();
   const tools = [...localTools, ...mcpTools];
 
-  const prompt = createPrompt(tools, mcpInstructions);
+  const prompt = createPrompt(tools, mcpInstructions || []);
 
   const llm = baseLlm.bindTools(tools);
 

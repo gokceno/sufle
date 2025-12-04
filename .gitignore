@@ -6,7 +6,8 @@ db.sqlite
 .env.*
 .env
 **/cli/models
-**/sample/data
+**/sample/data/**
+!.gitkeep
 *.conf
 
 # Bruno

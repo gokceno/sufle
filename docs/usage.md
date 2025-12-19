@@ -1,6 +1,6 @@
 # Usage Guide
 
-This guide covers using Sufle's API endpoints and CLI commands.
+This guide covers using Sufle's API endpoints, CLI commands, and demonstrates how tool calling and MCP integration work in practice.
 
 ## API Usage
 
@@ -162,6 +162,162 @@ curl -X DELETE http://localhost:3000/documents/DOCUMENT_ID \
   -H "Authorization: Bearer YOUR_API_KEY"
 ```
 
+## Tool Calling Examples
+
+These examples demonstrate how Sufle combines document retrieval with custom tools and MCP servers.
+
+### Pure Document Query
+
+Query only retrieves from indexed documents:
+
+```bash
+curl http://localhost:3000/v1/chat/completions \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "sufle/default",
+    "messages": [{
+      "role": "user",
+      "content": "What does our employee handbook say about vacation days?"
+    }]
+  }'
+```
+
+The LLM retrieves relevant sections from your documents and synthesizes an answer.
+
+### Custom Tool Call
+
+Query triggers a custom tool:
+
+```bash
+curl http://localhost:3000/v1/chat/completions \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "sufle/default",
+    "messages": [{
+      "role": "user",
+      "content": "What is the current weather in Paris?"
+    }]
+  }'
+```
+
+The LLM:
+1. Recognizes this requires real-time data
+2. Calls the `weather` tool with `city: "Paris"`
+3. Receives weather data
+4. Formats a natural response
+
+### MCP Server Call
+
+Query uses an MCP server tool:
+
+```bash
+curl http://localhost:3000/v1/chat/completions \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "sufle/default",
+    "messages": [{
+      "role": "user",
+      "content": "How many support tickets were opened last week?"
+    }]
+  }'
+```
+
+The LLM:
+1. Identifies this needs database access
+2. Calls MCP server's `execute_sql` tool
+3. Constructs appropriate SQL query
+4. Processes results and responds
+
+### Combined: Documents + Tool
+
+Query combines document context with tool calls:
+
+```bash
+curl http://localhost:3000/v1/chat/completions \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "sufle/default",
+    "messages": [{
+      "role": "user",
+      "content": "According to our travel policy, can I get reimbursed for a flight to London? Also, what is the current exchange rate for GBP?"
+    }]
+  }'
+```
+
+The LLM:
+1. Retrieves travel policy from documents
+2. Calls `exchangeRates` tool with `currency: "GBP"`
+3. Combines both sources in the response
+
+### Combined: Documents + MCP
+
+Query combines documents with database access:
+
+```bash
+curl http://localhost:3000/v1/chat/completions \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "sufle/default",
+    "messages": [{
+      "role": "user",
+      "content": "What does our SLA say about response times, and how are we performing against it this month?"
+    }]
+  }'
+```
+
+The LLM:
+1. Retrieves SLA document sections
+2. Queries database via MCP for actual response time metrics
+3. Compares policy vs reality in response
+
+### Combined: All Three
+
+Query uses documents, custom tools, and MCP servers:
+
+```bash
+curl http://localhost:3000/v1/chat/completions \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "sufle/default",
+    "messages": [{
+      "role": "user",
+      "content": "Review our severe weather policy, check current weather in our Dallas office location, and query if we had any incident tickets filed from Dallas in the past 24 hours."
+    }]
+  }'
+```
+
+The LLM:
+1. Retrieves severe weather policy from documents
+2. Calls `weather` tool for Dallas
+3. Calls MCP `execute_sql` to query incident database
+4. Synthesizes all information into coherent response
+
+### Multi-Turn Conversations with Tools
+
+Tools work across conversation turns:
+
+```bash
+curl http://localhost:3000/v1/chat/completions \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "sufle/default",
+    "messages": [
+      {"role": "user", "content": "What is the weather in Tokyo?"},
+      {"role": "assistant", "content": "The current weather in Tokyo is sunny, 22°C..."},
+      {"role": "user", "content": "What does our travel policy say about trips to Japan?"}
+    ]
+  }'
+```
+
+The LLM maintains context and can reference previous tool calls.
+
 #### Store Embeddings
 
 **Endpoint:** `POST /documents/:id/embeddings`
@@ -270,6 +426,50 @@ bun start:cli reduce --config-file ./sufle.yml
 [info] Loaded 150 documents.
 ```
 
+## Understanding Tool Behavior
+
+### How the LLM Decides
+
+The LLM automatically determines the best approach based on:
+
+1. **Query keywords** - "current", "weather", "latest" suggest tools
+2. **Tool descriptions** - Well-written descriptions guide usage
+3. **Available context** - If documents contain the answer, tools may not be needed
+4. **Query complexity** - Complex queries may require multiple tools
+5. **MCP instructions** - Guidelines in your configuration
+
+### Observing Tool Calls
+
+Enable debug logging to see tool execution:
+
+```bash
+export LOG_LEVEL=debug
+bun start:api
+```
+
+Example log output:
+```
+[debug] Calling tool: weather
+[debug] Tool input: {"city": "Paris"}
+[debug] Tool result: {"temp": 18, "conditions": "cloudy"}
+[debug] Calling tool: execute_sql
+[debug] Tool input: {"query": "SELECT COUNT(*) FROM tickets WHERE created_at > NOW() - INTERVAL '7 days'"}
+[debug] Tool result: [{"count": 47}]
+```
+
+### Tool Call Failures
+
+If a tool fails, the LLM handles it gracefully:
+
+```json
+{
+  "role": "assistant",
+  "content": "I attempted to check the weather but encountered an error with the weather service. However, based on your documents, your travel policy states..."
+}
+```
+
+The LLM falls back to available information.
+
 ## Integration Examples
 
 ### Python with OpenAI SDK
@@ -310,6 +510,31 @@ const response = await client.chat.completions.create({
 });
 
 console.log(response.choices[0].message.content);
+```
+
+### Python with Tool-Aware Queries
+
+```python
+from openai import OpenAI
+
+client = OpenAI(
+    api_key="YOUR_API_KEY",
+    base_url="http://localhost:3000/v1"
+)
+
+# Query that will use tools
+response = client.chat.completions.create(
+    model="sufle/default",
+    messages=[
+        {
+            "role": "user",
+            "content": "What's the weather in our Seattle office and what does our remote work policy say about weather-related work from home?"
+        }
+    ]
+)
+
+print(response.choices[0].message.content)
+# Response combines weather tool data with document retrieval
 ```
 
 ### cURL

@@ -113,7 +113,7 @@ RAG pipeline configuration.
 - `vector_store.provider` - Vector store backend (`libsql`)
 
 #### `tools` (optional)
-Custom tools to extend LLM capabilities.
+Custom tools extend the LLM with domain-specific capabilities. Each tool can access external APIs, perform calculations, or execute custom logic.
 
 ```yaml
 tools:
@@ -121,10 +121,24 @@ tools:
     opts:
       api_key: YOUR_WEATHER_API_KEY
   - tool: exchangeRates
+  - tool: customTool
+    opts:
+      endpoint: https://api.example.com
+      timeout: 5000
 ```
 
+**Tool fields:**
+- `tool` - Tool identifier (must match exported tool name)
+- `opts` - Tool-specific configuration passed to tool's `create()` function
+
+The LLM automatically decides when to call tools based on user queries. See [Developing Tools](developing-tools.md) for creating custom tools.
+
+**Available built-in tools:**
+- `weather` - Current weather data for any city (requires OpenWeatherMap API key)
+- `exchangeRates` - Currency exchange rates against TRL
+
 #### `mcp_servers` (optional)
-Model Context Protocol server integrations.
+Model Context Protocol servers provide pre-built integrations for databases, APIs, and services. They expose tools that the LLM can discover and use automatically.
 
 ```yaml
 mcp_servers:
@@ -134,8 +148,31 @@ mcp_servers:
     env:
       DATABASE_URL: "sqlite:///data/app.db"
     instructions: |
-      Guidelines for using this MCP server...
+      This server provides access to the application database.
+      
+      Schema:
+      - users (id, email, name, created_at)
+      - orders (id, user_id, amount, status, order_date)
+      
+      Use execute_sql tool to query. Always limit results to 100 rows.
+      When user asks about "recent", interpret as last 30 days.
 ```
+
+**MCP server fields:**
+- `server` - Unique identifier for this MCP server
+- `command` - Command to start the server (e.g., `npx`, `node`, `python`)
+- `args` - Command-line arguments array
+- `env` - Optional environment variables (can reference system env vars with `${VAR}`)
+- `instructions` - Critical guidelines for the LLM on how to use this server's tools
+
+**Instructions best practices:**
+- Document the schema/structure
+- Provide query examples
+- Set constraints (row limits, timeouts)
+- Define terminology (what "recent", "active" mean)
+- Note permissions (read-only, etc.)
+
+See [MCP Integration Guide](mcp-integration.md) for examples and available servers.
 
 #### `permissions`
 Workspace access control.
@@ -418,3 +455,145 @@ bun src/main.js vectorize
 - Check file permissions on document directories
 - Review worker logs for errors
 - Ensure API is reachable from CLI
+
+**"Configured tool: X is not available"**
+- Tool not exported from `apps/api/src/tools/index.ts`
+- Tool package not in dependencies
+- Tool name in config doesn't match exported name
+
+**MCP server fails to start**
+- Command not found (install package globally or use full path)
+- Invalid arguments or connection string
+- Missing environment variables
+- Check logs for MCP-specific errors
+
+**LLM not calling tools**
+- Review tool descriptions - make them explicit about when to use
+- Check MCP instructions - provide clear guidelines
+- Verify tools are registered (check startup logs)
+- Enable debug logging to see tool discovery
+
+## Advanced Configuration
+
+### Multiple Embedding Models
+
+Use different models for different workspaces:
+
+```yaml
+# API config
+rag:
+  embeddings:
+    provider: google
+    opts:
+      model: text-embedding-004
+      api_key: YOUR_KEY
+
+# CLI can use the same or different model
+embeddings:
+  provider: ollama  # Use local Ollama for cost savings
+  opts:
+    model: nomic-embed-text
+    base_url: http://localhost:11434
+```
+
+### Tool Configuration Patterns
+
+**API keys from environment:**
+```yaml
+tools:
+  - tool: weather
+    opts:
+      api_key: ${WEATHER_API_KEY}
+```
+
+**Multiple tools of different types:**
+```yaml
+tools:
+  # External APIs
+  - tool: weather
+    opts:
+      api_key: ${WEATHER_API_KEY}
+  - tool: stockData
+    opts:
+      api_key: ${STOCK_API_KEY}
+      
+  # Internal services
+  - tool: calculatePrice
+    opts:
+      rulesFile: /config/pricing.json
+      
+  # No configuration needed
+  - tool: exchangeRates
+```
+
+### MCP Server Patterns
+
+**Multiple databases:**
+```yaml
+mcp_servers:
+  - server: prod-db
+    command: npx
+    args: ["@modelcontextprotocol/server-postgres", "${PROD_DB_URL}"]
+    instructions: |
+      Production database (READ ONLY). Use for current data queries.
+      
+  - server: analytics-db
+    command: npx
+    args: ["@modelcontextprotocol/server-postgres", "${ANALYTICS_DB_URL}"]
+    instructions: |
+      Analytics warehouse. Use for historical data and trends.
+```
+
+**Different MCP server types:**
+```yaml
+mcp_servers:
+  # Database access
+  - server: postgres
+    command: npx
+    args: ["@modelcontextprotocol/server-postgres", "${DATABASE_URL}"]
+    
+  # File system access
+  - server: filesystem
+    command: npx
+    args: ["@modelcontextprotocol/server-filesystem", "/data/configs"]
+    
+  # GitHub integration
+  - server: github
+    command: npx
+    args: ["@modelcontextprotocol/server-github"]
+    env:
+      GITHUB_TOKEN: ${GITHUB_TOKEN}
+```
+
+### Permission Patterns
+
+**Role-based access:**
+```yaml
+permissions:
+  # Admins - full access
+  - users: [admin@company.com]
+    api_keys: [admin-key]
+    workspaces: [docs:rw, reports:rw, legal:rw]
+    
+  # Developers - dev and docs only
+  - users: [dev@company.com]
+    api_keys: [dev-key]
+    workspaces: [docs:rw, dev-notes:rw]
+    
+  # Read-only analysts
+  - users: [analyst@company.com]
+    api_keys: [analyst-key]
+    workspaces: [reports:r, docs:r]
+```
+
+**Service accounts:**
+```yaml
+permissions:
+  # API service account
+  - api_keys: [service-account-1]
+    workspaces: [public-docs:r]
+    
+  # Admin automation
+  - api_keys: [automation-key]
+    workspaces: [all:rw]
+```

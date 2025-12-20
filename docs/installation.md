@@ -23,6 +23,19 @@ cd sufle
 
 # Install dependencies
 bun install
+
+# Copy example configuration files
+cp apps/api/sufle.yml.example apps/api/sufle.yml
+cp apps/cli/sufle.yml.example apps/cli/sufle.yml
+cp apps/api/env.example apps/api/.env
+cp apps/cli/env.example apps/cli/.env
+
+# For rclone storage (optional)
+cp apps/cli/rclone.conf.example apps/cli/rclone.conf
+
+# Edit configuration files with your settings
+# nano apps/api/sufle.yml
+# nano apps/cli/sufle.yml
 ```
 
 ### Using Docker Compose
@@ -32,18 +45,30 @@ bun install
 git clone https://github.com/gokceno/sufle.git
 cd sufle
 
-# Create configuration files (see Configuration section)
+# Copy example configuration files
 cp apps/api/sufle.yml.example apps/api/sufle.yml
 cp apps/cli/sufle.yml.example apps/cli/sufle.yml
 
 # Edit configuration files with your settings
-# Then start all services
+nano apps/api/sufle.yml
+nano apps/cli/sufle.yml
+
+# Start all services
 docker-compose up -d
 ```
 
 ## Configuration
 
 Sufle uses YAML configuration files. You need separate configs for the API server and CLI workers.
+
+**Example files are provided:**
+- `apps/api/sufle.yml.example` - API server configuration template
+- `apps/cli/sufle.yml.example` - CLI workers configuration template
+- `apps/api/env.example` - API environment variables template
+- `apps/cli/env.example` - CLI environment variables template
+- `apps/cli/rclone.conf.example` - Rclone storage configuration template (optional)
+
+Copy these files and update with your settings as shown below.
 
 ### API Configuration
 

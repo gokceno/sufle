@@ -1,0 +1,144 @@
+# Sufle CLI Configuration Example
+# Copy this file to sufle.yml and update with your settings
+
+# Backend API connection settings
+backend:
+  # API key must match one defined in API server's permissions
+  api_key: your-api-key-here
+  # URL of the Sufle API server
+  base_url: http://localhost:3000
+
+# Schedule configuration using cron expressions
+schedule:
+  # Index: Scan workspaces for new/changed documents
+  # Runs every 5 minutes in this example
+  index: "*/5 * * * *"
+
+  # Reduce: Remove documents that no longer exist
+  # Runs every hour in this example
+  reduce: "0 * * * *"
+
+  # Vectorize: Process documents into embeddings
+  # Runs every 2 minutes in this example
+  vectorize: "*/2 * * * *"
+
+  # Cron expression format: "minute hour day month weekday"
+  # Examples:
+  # - "* * * * *"        Every minute
+  # - "*/5 * * * *"      Every 5 minutes
+  # - "0 * * * *"        Every hour
+  # - "0 */6 * * *"      Every 6 hours
+  # - "0 0 * * *"        Daily at midnight
+  # - "0 2 * * *"        Daily at 2 AM
+  # - "0 0 * * 0"        Weekly on Sunday
+
+# Storage backend configuration
+storage:
+  provider: local  # Options: local, rclone
+
+  # For local storage, no additional options needed
+
+  # For rclone storage (S3, GCS, etc.), configure rclone daemon:
+  # provider: rclone
+  # opts:
+  #   url: http://localhost:5572
+  #   username: admin
+  #   password: password
+
+# Embedding configuration (must match API server settings)
+embeddings:
+  provider: google  # Options: google, openai, ollama
+  opts:
+    model: text-embedding-004
+    api_key: YOUR_GOOGLE_API_KEY_HERE
+
+  # For OpenAI embeddings:
+  # provider: openai
+  # opts:
+  #   model: text-embedding-3-small
+  #   api_key: YOUR_OPENAI_API_KEY
+
+  # For Ollama (local) embeddings:
+  # provider: ollama
+  # opts:
+  #   model: nomic-embed-text
+  #   base_url: http://localhost:11434
+
+# Workspaces define document collections to index
+workspaces:
+  # Example: Local documents workspace
+  - id: docs  # Must match workspace ID in API permissions
+    remote: disk
+    dirs:
+      - ./sample/data
+      - /path/to/documents
+      - /another/path
+
+  # Example: Multiple directories in one workspace
+  # - id: company-docs
+  #   remote: disk
+  #   dirs:
+  #     - /data/engineering
+  #     - /data/product
+  #     - /data/marketing
+
+  # Example: Remote storage via rclone
+  # - id: cloud-docs
+  #   remote: s3-remote  # Remote name from rclone.conf
+  #   dirs:
+  #     - my-bucket/documents
+  #     - my-bucket/reports
+
+  # Example: Multiple workspaces for different departments
+  # - id: engineering
+  #   remote: disk
+  #   dirs:
+  #     - /data/engineering
+  #
+  # - id: legal
+  #   remote: disk
+  #   dirs:
+  #     - /data/legal
+  #
+  # - id: customer-docs
+  #   remote: s3-remote
+  #   dirs:
+  #     - customer-bucket/documents
+
+# Supported file types:
+# - PDF (.pdf)
+# - Markdown (.md)
+# - Text (.txt)
+# - Word (.docx)
+# - HTML (.html)
+
+# Environment variable overrides:
+# You can override any configuration value using environment variables:
+#
+# Format: PARENT__CHILD__VALUE
+# Example: BACKEND__API_KEY=your-key
+#
+# Common overrides:
+# - BACKEND__API_KEY=your-api-key
+# - BACKEND__BASE_URL=http://api:3000
+# - EMBEDDINGS__OPTS__API_KEY=your-key
+# - STORAGE__PROVIDER=local
+
+# Production scheduling recommendations:
+# For frequently updated documents:
+# schedule:
+#   index: "*/5 * * * *"      # Check for changes every 5 minutes
+#   vectorize: "*/10 * * * *" # Process every 10 minutes
+#   reduce: "0 * * * *"       # Cleanup hourly
+#
+# For stable documents:
+# schedule:
+#   index: "0 */6 * * *"      # Check every 6 hours
+#   vectorize: "30 */6 * * *" # Process 30 minutes after indexing
+#   reduce: "0 2 * * *"       # Cleanup daily at 2 AM
+
+# Notes:
+# - The workspace 'id' must match those in the API server's permissions
+# - The 'api_key' must exist in the API server's permissions
+# - Embedding settings must match the API server for consistency
+# - CLI workers can run on different machines than the API server

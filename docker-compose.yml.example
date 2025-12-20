@@ -1,0 +1,324 @@
+# Sufle Docker Compose Configuration Example
+# Copy this file to docker-compose.yml and update with your settings
+
+version: '3.8'
+
+services:
+  # ============================================================================
+  # API Server
+  # ============================================================================
+  # Handles chat completion requests, tool orchestration, and document management
+  api:
+    build:
+      context: .
+      dockerfile: ./apps/api/Dockerfile
+    container_name: sufle-api
+    command: start:api
+
+    # Environment variables
+    environment:
+      - LOG_LEVEL=info
+      - DB_MIGRATIONS_APPLY=true
+      - CONFIG_PATH=/app/apps/api/sufle.yml
+      # Override configuration values:
+      # - EMBEDDINGS__OPTS__API_KEY=${GOOGLE_API_KEY}
+      # - RAG__RETRIEVER__OPTS__K=10
+
+    # Mount configuration and data
+    volumes:
+      - ./apps/api/sufle.yml:/app/apps/api/sufle.yml:ro
+      - ./apps/api/db:/app/apps/api/db
+      - ./apps/api/sample/data:/app/apps/api/data
+
+    # Expose API on host
+    ports:
+      - "3000:3000"
+
+    # Restart policy
+    restart: unless-stopped
+
+    # Health check
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ============================================================================
+  # Index Worker
+  # ============================================================================
+  # Scans workspaces for new/changed documents
+  indexer:
+    build:
+      context: .
+      dockerfile: ./apps/cli/Dockerfile
+    container_name: sufle-indexer
+    command: start:cli index
+
+    environment:
+      - LOG_LEVEL=info
+      - DB_MIGRATIONS_APPLY=true
+      - CONFIG_PATH=/app/apps/cli/sufle.yml
+      # Override backend connection:
+      # - BACKEND__API_KEY=${API_KEY}
+      # - BACKEND__BASE_URL=http://api:3000
+
+    volumes:
+      - ./apps/cli/sufle.yml:/app/apps/cli/sufle.yml:ro
+      - ./apps/cli/db:/app/apps/cli/db
+      - ./apps/cli/sample/data:/app/apps/cli/sample/data:ro
+      # Add your document directories:
+      # - /path/to/local/docs:/data/docs:ro
+
+    restart: unless-stopped
+
+    # Wait for API to be ready
+    depends_on:
+      api:
+        condition: service_healthy
+
+  # ============================================================================
+  # Vectorize Worker
+  # ============================================================================
+  # Processes documents into embeddings
+  vectorizer:
+    build:
+      context: .
+      dockerfile: ./apps/cli/Dockerfile
+    container_name: sufle-vectorizer
+    command: start:cli vectorize
+
+    environment:
+      - LOG_LEVEL=info
+      - DB_MIGRATIONS_APPLY=false
+      - CONFIG_PATH=/app/apps/cli/sufle.yml
+
+    volumes:
+      - ./apps/cli/sufle.yml:/app/apps/cli/sufle.yml:ro
+      - ./apps/cli/db:/app/apps/cli/db
+      - ./apps/cli/sample/data:/app/apps/cli/sample/data:ro
+      # Share same document directories as indexer
+      # - /path/to/local/docs:/data/docs:ro
+
+    restart: unless-stopped
+
+    depends_on:
+      api:
+        condition: service_healthy
+
+  # ============================================================================
+  # Reduce Worker
+  # ============================================================================
+  # Removes documents that no longer exist
+  reducer:
+    build:
+      context: .
+      dockerfile: ./apps/cli/Dockerfile
+    container_name: sufle-reducer
+    command: start:cli reduce
+
+    environment:
+      - LOG_LEVEL=info
+      - DB_MIGRATIONS_APPLY=false
+      - CONFIG_PATH=/app/apps/cli/sufle.yml
+
+    volumes:
+      - ./apps/cli/sufle.yml:/app/apps/cli/sufle.yml:ro
+      - ./apps/cli/db:/app/apps/cli/db
+      - ./apps/cli/sample/data:/app/apps/cli/sample/data:ro
+      # Share same document directories as indexer
+      # - /path/to/local/docs:/data/docs:ro
+
+    restart: unless-stopped
+
+    depends_on:
+      api:
+        condition: service_healthy
+
+  # ============================================================================
+  # Rclone Daemon (Optional)
+  # ============================================================================
+  # For remote storage access (S3, GCS, Azure, etc.)
+  # Uncomment if using storage.provider: rclone
+  # rclone:
+  #   image: rclone/rclone:latest
+  #   container_name: sufle-rclone
+  #   command: rcd --rc-addr=:5572 --rc-user=admin --rc-pass=password --rc-serve
+  #
+  #   environment:
+  #     - RCLONE_CONFIG=/config/rclone.conf
+  #
+  #   volumes:
+  #     - ./apps/cli/rclone.conf:/config/rclone.conf:ro
+  #     - rclone_data:/data
+  #
+  #   restart: unless-stopped
+  #
+  #   # Expose rclone API (optional, for debugging)
+  #   # ports:
+  #   #   - "5572:5572"
+
+  # ============================================================================
+  # PostgreSQL (Optional)
+  # ============================================================================
+  # For MCP database server
+  # Uncomment if using MCP server with PostgreSQL
+  # postgres:
+  #   image: postgres:16-alpine
+  #   container_name: sufle-postgres
+  #
+  #   environment:
+  #     - POSTGRES_DB=sufle
+  #     - POSTGRES_USER=sufle
+  #     - POSTGRES_PASSWORD=your-secure-password
+  #
+  #   volumes:
+  #     - postgres_data:/var/lib/postgresql/data
+  #
+  #   restart: unless-stopped
+  #
+  #   # Expose PostgreSQL port (optional, for external access)
+  #   # ports:
+  #   #   - "5432:5432"
+
+  # ============================================================================
+  # Ollama (Optional)
+  # ============================================================================
+  # For local embeddings and LLMs
+  # Uncomment if using embeddings.provider: ollama
+  # ollama:
+  #   image: ollama/ollama:latest
+  #   container_name: sufle-ollama
+  #
+  #   volumes:
+  #     - ollama_data:/root/.ollama
+  #
+  #   restart: unless-stopped
+  #
+  #   # Expose Ollama API
+  #   ports:
+  #     - "11434:11434"
+  #
+  #   # Optional: GPU support
+  #   # deploy:
+  #   #   resources:
+  #   #     reservations:
+  #   #       devices:
+  #   #         - driver: nvidia
+  #   #           count: 1
+  #   #           capabilities: [gpu]
+
+# ============================================================================
+# Volumes
+# ============================================================================
+volumes:
+  # Persistent storage for CLI database
+  cli_data:
+
+  # Persistent storage for API database
+  api_data:
+
+  # Persistent storage for rclone cache (if enabled)
+  # rclone_data:
+
+  # Persistent storage for PostgreSQL (if enabled)
+  # postgres_data:
+
+  # Persistent storage for Ollama models (if enabled)
+  # ollama_data:
+
+# ============================================================================
+# Networks (Optional)
+# ============================================================================
+# Uncomment to create a custom network
+# networks:
+#   sufle-network:
+#     driver: bridge
+
+# Then add to each service:
+# networks:
+#   - sufle-network
+
+# ============================================================================
+# Usage Instructions
+# ============================================================================
+#
+# 1. Copy this file:
+#    cp docker-compose.yml.example docker-compose.yml
+#
+# 2. Create configuration files:
+#    cp apps/api/sufle.yml.example apps/api/sufle.yml
+#    cp apps/cli/sufle.yml.example apps/cli/sufle.yml
+#
+# 3. Edit configuration files with your API keys and settings
+#
+# 4. Start all services:
+#    docker-compose up -d
+#
+# 5. View logs:
+#    docker-compose logs -f
+#
+# 6. Stop all services:
+#    docker-compose down
+#
+# 7. Stop and remove data:
+#    docker-compose down -v
+#
+# ============================================================================
+# Environment-Specific Configurations
+# ============================================================================
+#
+# Development:
+# - Set LOG_LEVEL=debug
+# - Use frequent worker schedules (every 1-5 minutes)
+# - Expose ports for debugging
+#
+# Production:
+# - Set LOG_LEVEL=warn or LOG_LEVEL=error
+# - Use appropriate worker schedules
+# - Use secrets management for sensitive values
+# - Add resource limits
+# - Configure proper backup for volumes
+# - Use health checks
+# - Consider using Docker Swarm or Kubernetes
+#
+# ============================================================================
+# Resource Limits (Production)
+# ============================================================================
+#
+# Add to each service for production:
+#
+# deploy:
+#   resources:
+#     limits:
+#       cpus: '1.0'
+#       memory: 1G
+#     reservations:
+#       cpus: '0.5'
+#       memory: 512M
+#
+# ============================================================================
+# Security Considerations
+# ============================================================================
+#
+# 1. Use .env file for sensitive values:
+#    - Create .env file in root directory
+#    - Reference with ${VARIABLE_NAME}
+#    - Add .env to .gitignore
+#
+# 2. Use Docker secrets (Swarm mode):
+#    - Store sensitive data as secrets
+#    - Reference in environment section
+#
+# 3. Run as non-root user:
+#    - Add 'user: "1000:1000"' to services
+#
+# 4. Use read-only file systems where possible:
+#    - Add ':ro' to volume mounts that don't need writes
+#
+# 5. Network isolation:
+#    - Create custom networks
+#    - Only expose necessary ports
+#
+# ============================================================================

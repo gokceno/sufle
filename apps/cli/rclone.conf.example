@@ -1,0 +1,160 @@
+# Rclone Configuration Example
+# Copy this file to rclone.conf and update with your settings
+# This file is used by the rclone daemon when storage.provider is set to 'rclone'
+
+# ============================================================================
+# AWS S3 Configuration
+# ============================================================================
+[s3-remote]
+type = s3
+provider = AWS
+access_key_id = YOUR_AWS_ACCESS_KEY_ID
+secret_access_key = YOUR_AWS_SECRET_ACCESS_KEY
+region = us-east-1
+# Optional: endpoint for S3-compatible services
+# endpoint = https://s3.us-east-1.amazonaws.com
+# Optional: server-side encryption
+# server_side_encryption = AES256
+
+# ============================================================================
+# Google Cloud Storage Configuration
+# ============================================================================
+[gcs-remote]
+type = google cloud storage
+# Path to service account JSON file
+service_account_file = /path/to/service-account.json
+project_number = YOUR_PROJECT_NUMBER
+# Optional: specify location
+# location = us
+
+# ============================================================================
+# Microsoft Azure Blob Storage Configuration
+# ============================================================================
+[azure-remote]
+type = azureblob
+account = YOUR_STORAGE_ACCOUNT_NAME
+key = YOUR_STORAGE_ACCOUNT_KEY
+# Or use SAS URL instead of key:
+# sas_url = YOUR_SAS_URL
+
+# ============================================================================
+# Backblaze B2 Configuration
+# ============================================================================
+[b2-remote]
+type = b2
+account = YOUR_B2_APPLICATION_KEY_ID
+key = YOUR_B2_APPLICATION_KEY
+# Optional: hard delete instead of hiding files
+# hard_delete = true
+
+# ============================================================================
+# Dropbox Configuration
+# ============================================================================
+[dropbox-remote]
+type = dropbox
+# You'll need to generate this token via OAuth flow
+# See: rclone config
+token = YOUR_DROPBOX_TOKEN
+
+# ============================================================================
+# OneDrive Configuration
+# ============================================================================
+[onedrive-remote]
+type = onedrive
+# You'll need to generate this token via OAuth flow
+# See: rclone config
+token = YOUR_ONEDRIVE_TOKEN
+drive_id = YOUR_DRIVE_ID
+drive_type = business  # or 'personal'
+
+# ============================================================================
+# SFTP Configuration
+# ============================================================================
+[sftp-remote]
+type = sftp
+host = sftp.example.com
+user = YOUR_USERNAME
+port = 22
+# Use key-based authentication (recommended):
+key_file = /path/to/private/key
+# Or password authentication:
+# pass = YOUR_PASSWORD
+# Optional: known_hosts file
+# known_hosts_file = /path/to/known_hosts
+
+# ============================================================================
+# WebDAV Configuration
+# ============================================================================
+[webdav-remote]
+type = webdav
+url = https://webdav.example.com
+vendor = other  # or 'nextcloud', 'owncloud', 'sharepoint'
+user = YOUR_USERNAME
+pass = YOUR_PASSWORD
+
+# ============================================================================
+# Local Filesystem (for testing)
+# ============================================================================
+[local-remote]
+type = alias
+remote = /path/to/local/directory
+
+# ============================================================================
+# Usage in sufle.yml
+# ============================================================================
+#
+# In your CLI configuration, reference the remote name:
+#
+# workspaces:
+#   - id: s3-docs
+#     remote: s3-remote
+#     dirs:
+#       - my-bucket/documents
+#       - my-bucket/reports
+#
+#   - id: gcs-docs
+#     remote: gcs-remote
+#     dirs:
+#       - my-bucket/files
+#
+# ============================================================================
+# Generating OAuth Tokens
+# ============================================================================
+#
+# For services requiring OAuth (Dropbox, OneDrive, Google Drive):
+#
+# 1. Install rclone locally:
+#    curl https://rclone.org/install.sh | sudo bash
+#
+# 2. Run interactive config:
+#    rclone config
+#
+# 3. Follow prompts to authenticate via browser
+#
+# 4. Copy the generated token to this file
+#
+# ============================================================================
+# Security Notes
+# ============================================================================
+#
+# - Keep this file secure - it contains credentials
+# - Add rclone.conf to .gitignore
+# - Use environment variables for credentials in production
+# - Consider using IAM roles/service accounts instead of keys
+# - Rotate credentials regularly
+# - Use read-only credentials if possible
+#
+# ============================================================================
+# Testing Your Configuration
+# ============================================================================
+#
+# Test a remote configuration:
+# rclone ls s3-remote:my-bucket
+#
+# List remotes:
+# rclone listremotes
+#
+# Check configuration:
+# rclone config show
+#
+# ============================================================================

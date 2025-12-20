@@ -42,6 +42,8 @@ See [Architecture](docs/architecture.md) for details, or jump to [Developing Too
 
 ## Quick Start
 
+**New to Sufle?** See [GETTING-STARTED.md](GETTING-STARTED.md) for a step-by-step setup guide with checklists.
+
 ### Prerequisites
 
 - [Bun](https://bun.sh) 1.2.13+
@@ -57,11 +59,19 @@ cd sufle
 
 # Install dependencies
 bun install
+
+# Copy example configurations
+cp apps/api/sufle.yml.example apps/api/sufle.yml
+cp apps/cli/sufle.yml.example apps/cli/sufle.yml
+
+# Edit with your settings
+nano apps/api/sufle.yml
+nano apps/cli/sufle.yml
 ```
 
 ### Configuration
 
-Create `sufle.yml` files for both API and CLI:
+Create `sufle.yml` files for both API and CLI. Example files are provided in the repository.
 
 **For API** (`apps/api/sufle.yml`):
 ```yaml
@@ -143,7 +153,9 @@ workspaces:
       - /path/to/documents
 ```
 
-See [Installation & Configuration](docs/installation.md) for detailed setup instructions.
+See [Installation & Configuration](docs/installation.md) for detailed setup instructions and all configuration options.
+
+**Note:** The example configuration files include detailed comments explaining each option. Review `sufle.yml.example` files in both `apps/api` and `apps/cli` directories.
 
 ### Running
 
@@ -241,6 +253,7 @@ See [MCP Integration Guide](docs/mcp-integration.md) for examples and best pract
 
 ## Documentation
 
+- [Getting Started Guide](GETTING-STARTED.md) - Step-by-step setup with checklists
 - [Why Sufle?](docs/why-sufle.md) - How Sufle differs from basic RAG systems
 - [Quick Reference](docs/quick-reference.md) - Common patterns and examples
 - [Architecture](docs/architecture.md) - System design and components

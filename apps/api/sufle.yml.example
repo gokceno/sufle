@@ -1,0 +1,185 @@
+# Sufle API Configuration Example
+# Copy this file to sufle.yml and update with your settings
+
+# Output models define the LLMs available through the API
+output_models:
+  # Lightweight model for quick responses
+  - id: sufle/sufle-lite
+    owned_by: sufle
+    chat:
+      provider: google
+      opts:
+        model: gemini-2.0-flash-lite
+        api_key: YOUR_GOOGLE_API_KEY_HERE
+        temprature: 1
+        max_messages: 32
+        max_tokens: 8192
+        max_message_length: 4096
+
+  # Standard model for general use
+  - id: sufle/sufle-original
+    owned_by: sufle
+    chat:
+      provider: google
+      opts:
+        model: gemini-2.0-flash
+        api_key: YOUR_GOOGLE_API_KEY_HERE
+        temprature: 1
+        max_messages: 32
+        max_tokens: 16000
+        max_message_length: 32000
+
+  # Advanced model for complex queries
+  - id: sufle/sufle-max
+    owned_by: sufle
+    chat:
+      provider: google
+      opts:
+        model: gemini-2.0-pro
+        api_key: YOUR_GOOGLE_API_KEY_HERE
+        temprature: 1
+        max_messages: 32
+        max_tokens: 8192
+        max_message_length: 4096
+
+# RAG (Retrieval-Augmented Generation) configuration
+rag:
+  provider: langchain
+
+  # Embedding model for document vectorization
+  embeddings:
+    provider: google  # Options: google, openai, ollama
+    opts:
+      model: text-embedding-004
+      api_key: YOUR_GOOGLE_API_KEY_HERE
+      # For OpenAI:
+      # provider: openai
+      # model: text-embedding-3-small
+      # api_key: YOUR_OPENAI_API_KEY
+      # For Ollama (local):
+      # provider: ollama
+      # model: nomic-embed-text
+      # base_url: http://localhost:11434
+
+  # Retriever configuration
+  retriever:
+    opts:
+      k: 5  # Number of document chunks to retrieve
+
+  # Vector store backend
+  vector_store:
+    provider: libsql
+
+# Custom tools extend LLM capabilities
+tools:
+  # Weather data tool
+  - tool: weather
+    opts:
+      api_key: YOUR_OPENWEATHERMAP_API_KEY
+
+  # Currency exchange rates
+  - tool: exchangeRates
+
+  # Add your custom tools here
+  # - tool: yourCustomTool
+  #   opts:
+  #     apiKey: YOUR_API_KEY
+  #     endpoint: https://api.example.com
+
+# MCP (Model Context Protocol) servers provide access to external data sources
+mcp_servers:
+  # Example: PostgreSQL database
+  # - server: postgres-db
+  #   command: npx
+  #   args: ["@modelcontextprotocol/server-postgres", "postgresql://user:pass@localhost/db"]
+  #   instructions: |
+  #     **Production Database (READ ONLY)**
+  #
+  #     Schema:
+  #     - users (id, email, name, created_at)
+  #     - orders (id, user_id, amount, status, order_date)
+  #
+  #     Use execute_sql to query. Always limit results to 100 rows.
+  #     When user asks about "recent", interpret as last 30 days.
+
+  # Example: SQLite database
+  # - server: sqlite-db
+  #   command: npx
+  #   args:
+  #     - "@bytebase/dbhub"
+  #     - "--transport"
+  #     - "stdio"
+  #     - "--dsn"
+  #     - "sqlite:///data/app.db"
+  #   instructions: |
+  #     **Application Database**
+  #
+  #     Schema:
+  #     - items (id, name, category, price, stock)
+  #
+  #     Use execute_sql tool to query inventory and pricing.
+
+  # Example: File system access
+  # - server: filesystem
+  #   command: npx
+  #   args:
+  #     - "@modelcontextprotocol/server-filesystem"
+  #     - "/path/to/allowed/directory"
+  #   instructions: |
+  #     Access to configuration files.
+  #     Available tools: read_file, list_directory
+  #     Read-only access.
+
+  # Example: GitHub integration
+  # - server: github
+  #   command: npx
+  #   args: ["@modelcontextprotocol/server-github"]
+  #   env:
+  #     GITHUB_TOKEN: YOUR_GITHUB_TOKEN
+  #   instructions: |
+  #     GitHub API access for repository operations.
+  #     Can search issues, create PRs, list repositories.
+  #     Use when user asks about GitHub repositories or issues.
+
+# Permissions define who can access which workspaces
+permissions:
+  # Example: Admin user with full access
+  - users:
+      - admin@example.com
+    api_keys:
+      - admin-api-key-here
+    workspaces:
+      - docs:rw        # Read-write access to docs workspace
+      - reports:rw     # Read-write access to reports workspace
+      - legal:rw       # Read-write access to legal workspace
+
+  # Example: Regular user with read-only access
+  - users:
+      - user@example.com
+    api_keys:
+      - user-api-key-here
+    workspaces:
+      - docs:r         # Read-only access to docs workspace
+      - reports:r      # Read-only access to reports workspace
+
+  # Example: Service account for automation
+  - api_keys:
+      - service-account-key
+    workspaces:
+      - docs:rw
+
+  # Access levels:
+  # - workspace-id:r   (read-only: can query documents)
+  # - workspace-id:w   (write-only: can create/update documents)
+  # - workspace-id:rw  (read-write: full access)
+
+# Environment variable overrides:
+# You can override any configuration value using environment variables:
+#
+# Format: PARENT__CHILD__VALUE
+# Example: EMBEDDINGS__OPTS__API_KEY=your-key
+#
+# Common overrides:
+# - RAG__EMBEDDINGS__OPTS__API_KEY
+# - OUTPUT_MODELS__0__CHAT__OPTS__API_KEY
+# - TOOLS__0__OPTS__API_KEY

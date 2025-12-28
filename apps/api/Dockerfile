@@ -25,24 +25,24 @@ RUN bun install --frozen-lockfile
 
 FROM oven/bun:1 AS run
 
-RUN apt-get update && apt-get install -y \
-    build-essential \
-    python3 \
-    python3-pip \
-    pkg-config \
-    libvips-dev \
-    nodejs \
-    npm \
-    && rm -rf /var/lib/apt/lists/*
+# RUN apt-get update && apt-get install -y \
+#     build-essential \
+#     python3 \
+#     python3-pip \
+#     pkg-config \
+#     libvips-dev \
+#     nodejs \
+#     npm \
+#     && rm -rf /var/lib/apt/lists/*
 
-# Install npx globally
-RUN npm install -g npx
+# # Install npx globally
+# RUN npm install -g npx
 
-# Create symlink for python if it doesn't exist (node-gyp looks for 'python')
-RUN ln -sf /usr/bin/python3 /usr/bin/python
+# # Create symlink for python if it doesn't exist (node-gyp looks for 'python')
+# RUN ln -sf /usr/bin/python3 /usr/bin/python
 
-# Set PYTHON environment variable for node-gyp
-ENV PYTHON=/usr/bin/python3
+# # Set PYTHON environment variable for node-gyp
+# ENV PYTHON=/usr/bin/python3
 
 WORKDIR /app
 

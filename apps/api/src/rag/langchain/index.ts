@@ -5,7 +5,10 @@ import type { Config, RawConfig, RetrievedDoc } from "../../types";
 import type { ChatMessage } from "../../types/chat";
 import { create as createPrompt } from "./prompt";
 import * as availableTools from "../../tools";
-import { createToolCallingAgent, AgentExecutor } from "langchain/agents";
+import {
+  createToolCallingAgent,
+  AgentExecutor,
+} from "@langchain/classic/agents";
 import { tool } from "@langchain/core/tools";
 import { MultiServerMCPClient } from "@langchain/mcp-adapters";
 

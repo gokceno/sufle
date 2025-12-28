@@ -1,7 +1,7 @@
 import { factory as chatFactory } from "../../chat";
 import { parse, raw, logger } from "../../utils";
 import { factory as storeFactory } from "../../stores";
-import type { Config, RawConfig, RetrievedDoc } from "../../types";
+import type { Config, RawConfig } from "../../types";
 import type { ChatMessage } from "../../types/chat";
 import * as availableTools from "../../tools";
 import { tool } from "@langchain/core/tools";
@@ -175,7 +175,7 @@ const perform = async (
   messages: ChatMessage[],
   permissions?: Array<object>
 ): Promise<string> => {
-  const { store, llm, filter, tools, systemPrompt } = await initialize(
+  const { store, filter, tools, systemPrompt } = await initialize(
     outputModelConfig
   );
 

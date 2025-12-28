@@ -1,7 +1,7 @@
 {
   "name": "@sufle/api",
   "type": "module",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "license": "MIT",
   "packageManager": "bun@1.3.5",
   "repository": "git+https://github.com/gokceno/sufle.git",

@@ -1,5 +1,15 @@
 # @sufle/api
 
+## 0.6.1
+
+### Patch Changes
+
+- bd44c61: Sanitize Gemini schemas and improve prompts
+
+  Replace the static RAG system prompt with a dynamic prompt builder that adapts to available tools and retrieval capabilities. Add logger debug when initializing the Google chat provider. Fix config: rename 'temprature' to 'temperature' and add a 'streaming' option.
+
+- c836ee4: Comment out package installs in API Dockerfile
+
 ## 0.6.0
 
 ### Minor Changes

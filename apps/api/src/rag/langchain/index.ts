@@ -15,16 +15,10 @@ import * as z from "zod";
 const config: Config = parse(process.env.CONFIG_PATH || "sufle.yml");
 const rawConfig: RawConfig = raw(process.env.CONFIG_PATH || "sufle.yml");
 
-/**
- * Sanitize JSON Schema for Google Gemini API compatibility
- * Removes unsupported keywords like exclusiveMinimum, exclusiveMaximum, etc.
- */
 const sanitizeSchemaForGemini = (schema: any): any => {
   if (!schema || typeof schema !== "object") {
     return schema;
   }
-
-  // Keywords not supported by Google Gemini API
   const unsupportedKeywords = [
     "exclusiveMinimum",
     "exclusiveMaximum",
@@ -51,25 +45,18 @@ const sanitizeSchemaForGemini = (schema: any): any => {
   const sanitized = Array.isArray(schema) ? [] : {};
 
   for (const [key, value] of Object.entries(schema)) {
-    // Skip unsupported keywords
     if (unsupportedKeywords.includes(key)) {
       continue;
     }
-
-    // Recursively sanitize nested objects and arrays
     if (typeof value === "object" && value !== null) {
       (sanitized as any)[key] = sanitizeSchemaForGemini(value);
     } else {
       (sanitized as any)[key] = value;
     }
   }
-
   return sanitized;
 };
 
-/**
- * Sanitize MCP tools to be compatible with Google Gemini API
- */
 const sanitizeMCPTools = (tools: any[]): any[] => {
   return tools.map((tool) => {
     if (tool.schema) {
@@ -128,49 +115,26 @@ const initialize = async (outputModelConfig: object) => {
       });
     }
     if (Object.keys(mcpServers).length > 0) {
-      logger.debug("[MCP] Initializing MCP servers:", Object.keys(mcpServers));
+      logger.debug("Initializing MCP servers:", Object.keys(mcpServers));
       try {
         const mcpClient = new MultiServerMCPClient(mcpServers);
         const rawMcpTools = await mcpClient.getTools();
-        logger.debug("[MCP] Raw tools retrieved:", rawMcpTools.length);
-        rawMcpTools.forEach((t: any) => {
-          logger.debug(`[MCP] Tool: ${t.name} - ${t.description}`);
-          logger.debug(`[MCP] Schema:`, JSON.stringify(t.schema, null, 2));
-        });
-        // Sanitize MCP tools for Gemini compatibility
         const sanitizedTools = sanitizeMCPTools(rawMcpTools);
-        logger.debug("[MCP] Tools after sanitization:", sanitizedTools.length);
+        logger.debug("Tools after sanitization:", sanitizedTools.length);
 
-        // Explicitly wrap MCP tools as LangChain tools for Gemini compatibility
         mcpTools = sanitizedTools.map((t: any) => {
-          logger.debug(`[MCP] Wrapping tool: ${t.name}`);
-
-          // Extract the original function
+          logger.debug(`Wrapping tool: ${t.name}`);
           const originalInvoke = t.invoke ? t.invoke.bind(t) : t.func?.bind(t);
-
           if (!originalInvoke) {
-            logger.error(`[MCP] Tool ${t.name} has no invoke or func method`);
             throw new Error(`Tool ${t.name} is not properly formed`);
           }
 
-          // Create a new tool using LangChain's tool() wrapper
           return tool(
             async (input: any) => {
-              logger.debug(
-                `[MCP Tool] Calling ${t.name} with input:`,
-                JSON.stringify(input, null, 2)
-              );
               try {
                 const result = await originalInvoke(input);
-                logger.debug(
-                  `[MCP Tool] ${t.name} returned:`,
-                  typeof result === "string"
-                    ? result.substring(0, 200)
-                    : JSON.stringify(result, null, 2)
-                );
                 return result;
               } catch (error: any) {
-                logger.error(`[MCP Tool] Error in ${t.name}:`, error);
                 return `Error executing ${t.name}: ${error.message}`;
               }
             },
@@ -181,21 +145,14 @@ const initialize = async (outputModelConfig: object) => {
             }
           );
         });
-        logger.debug("[MCP] Successfully wrapped all MCP tools");
       } catch (error: any) {
-        logger.error("[MCP] Error initializing MCP client:", error);
+        logger.error("Error initializing MCP client:", error);
         throw error;
       }
     }
   }
   const tools = [...localTools, ...mcpTools];
-  logger.debug("[Tools] Total tools available:", tools.length);
-  logger.debug(
-    "[Tools] Tool names:",
-    tools.map((t: any) => t.name || "unnamed")
-  );
 
-  // Use the comprehensive prompt from prompt.ts
   const promptTemplate = createPrompt(tools, mcpInstructions);
 
   // Extract the system prompt from the template
@@ -222,11 +179,6 @@ const perform = async (
     outputModelConfig
   );
 
-  logger.debug(
-    "[Perform] Available tools:",
-    tools.map((t: any) => t.name || "unnamed")
-  );
-
   const retriever = store.asRetriever({
     ...config.rag.retriever.opts,
     ...filter(permissions),
@@ -235,8 +187,6 @@ const perform = async (
   const chatContext = messages
     .map((msg) => `${msg.role}: ${msg.content}`)
     .join("\n");
-
-  logger.debug("[Perform] Chat context:", chatContext);
 
   // Track retrieved documents for verification
   let retrievedDocuments: any[] = [];
@@ -291,22 +241,12 @@ const perform = async (
       }
     );
 
-    // Combine wrapped retriever tool with other tools
     const allTools = [wrappedRetrieverTool, ...tools];
-
-    logger.debug("[Agent] Total tools including retriever:", allTools.length);
+    logger.debug("Total tools including retriever:", allTools.length);
 
     // Extract model configuration for createAgent
     const modelConfig = (outputModelConfig as any).chat.opts;
     const checkpointer = new MemorySaver();
-
-    // Create agent using LangChain's createAgent
-    logger.debug("[Agent] Creating agent with model:", modelConfig.model);
-
-    // Set environment variable for API key if needed
-    if (modelConfig.apiKey || modelConfig.api_key) {
-      process.env.GOOGLE_API_KEY = modelConfig.apiKey || modelConfig.api_key;
-    }
 
     const agent = createAgent({
       model: `google-genai:${modelConfig.model}`,
@@ -315,8 +255,7 @@ const perform = async (
       checkpointer,
     });
 
-    // Invoke the agent
-    logger.debug("[Agent] Invoking agent");
+    logger.debug("Invoking agent");
 
     // Convert messages to LangChain message objects
     const langchainMessages = messages.map((msg) => {
@@ -346,54 +285,17 @@ const perform = async (
       // Log RAG usage verification
       if (retrievedDocuments.length > 0) {
         logger.debug(
-          `[RAG Verification] ✓ Response generated using ${retrievedDocuments.length} retrieved documents`
+          `Response generated using ${retrievedDocuments.length} retrieved documents`
         );
-        logger.debug(
-          "[RAG Verification] Sources:",
-          retrievedDocuments.map((d: any) => d.metadata?.source || "unknown")
-        );
-
-        logger.debug("[RAG Verification] Details:");
-        logger.debug("  - Query:", retrievalQuery);
-        logger.debug("  - Retrieved docs:", retrievedDocuments.length);
-        logger.debug(
-          "  - Response length:",
-          typeof content === "string" ? content.length : "N/A"
-        );
-
-        // Check if response contains citations
-        const contentStr =
-          typeof content === "string" ? content : JSON.stringify(content);
-        const hasCitations =
-          contentStr.includes("(Source:") ||
-          contentStr.includes("According to") ||
-          contentStr.includes("Sources Used:");
-        logger.debug(
-          "  - Contains citations:",
-          hasCitations ? "✓ YES" : "✗ NO"
-        );
-
-        if (!hasCitations) {
-          logger.warn(
-            "[RAG Verification] ⚠️  Response does not contain citations despite having retrieved documents!"
-          );
-        }
+        logger.debug("Retrieved docs:", retrievedDocuments.length);
       } else {
-        logger.warn(
-          "[RAG Verification] ⚠️  WARNING: No documents were retrieved for this response"
-        );
-        logger.debug("[RAG Verification] No retrieval details available");
-        logger.debug("  - This response may be from general knowledge");
-        logger.debug(
-          "  - Consider if retrieve_documents should have been called"
-        );
+        logger.warn("No documents were retrieved for this response");
       }
 
       // Handle different content types
       if (typeof content === "string") {
         return content;
       } else if (Array.isArray(content)) {
-        // If content is an array of blocks, extract text
         return content
           .map((block: any) =>
             typeof block === "string" ? block : block.text || ""
@@ -405,15 +307,7 @@ const perform = async (
 
     return JSON.stringify(result);
   } catch (error: any) {
-    logger.error("[Agent] Error during execution:", error);
-    logger.error("[Agent] Error message:", error.message);
-    logger.error("[Agent] Error stack:", error.stack);
-
-    // If createAgent fails, it might be a model compatibility issue
-    if (error.message?.includes("model")) {
-      return `Model configuration error: ${error.message}. Please check your model settings in sufle.yml`;
-    }
-
+    logger.error("Error during execution:", error);
     return `I encountered an error while processing your request: ${error.message}. Please try again.`;
   }
 };

@@ -1,5 +1,14 @@
 # @sufle/api
 
+## 0.6.0
+
+### Minor Changes
+
+- 64fd507: Upgrade dependencies and LangChain import
+
+  Bump Bun to 1.3.5, update many package versions and bun.lock, and switch
+  agent imports to @langchain/classic/agents
+
 ## 0.5.5
 
 ### Patch Changes

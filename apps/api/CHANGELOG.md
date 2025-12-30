@@ -1,5 +1,20 @@
 # @sufle/api
 
+## 0.7.0
+
+### Minor Changes
+
+- 03fed1c: Add RAG tool and integrate LangChain tool changes
+
+### Patch Changes
+
+- 61f5890: Restructure RAG prompts and remove unused imports
+- Updated dependencies [03fed1c]
+- Updated dependencies [61f5890]
+  - @sufle/tool-exchange-rates@0.2.0
+  - @sufle/tool-weather@0.1.0
+  - @sufle/tool-rag@0.1.0
+
 ## 0.6.1
 
 ### Patch Changes

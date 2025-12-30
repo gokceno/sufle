@@ -30,6 +30,7 @@
     "@sufle/config": "*",
     "@sufle/embeddings": "*",
     "@sufle/tool-exchange-rates": "0.1.0",
+    "@sufle/tool-rag": "0.0.1",
     "@sufle/tool-weather": "0.0.1",
     "drizzle-orm": "^0.45.1",
     "fastify": "^5.6.2",

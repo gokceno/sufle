@@ -9,7 +9,7 @@
     },
     "apps/api": {
       "name": "@sufle/api",
-      "version": "0.5.5",
+      "version": "0.6.1",
       "dependencies": {
         "@fastify/auth": "^5.0.4",
         "@langchain/classic": "^1.0.7",
@@ -23,6 +23,7 @@
         "@sufle/config": "*",
         "@sufle/embeddings": "*",
         "@sufle/tool-exchange-rates": "0.1.0",
+        "@sufle/tool-rag": "0.0.1",
         "@sufle/tool-weather": "0.0.1",
         "drizzle-orm": "^0.45.1",
         "fastify": "^5.6.2",
@@ -42,7 +43,7 @@
     },
     "apps/cli": {
       "name": "@sufle/cli",
-      "version": "0.2.3",
+      "version": "0.3.0",
       "dependencies": {
         "@drizzle-team/brocli": "^0.11.0",
         "@google/generative-ai": "^0.24.1",
@@ -91,7 +92,20 @@
       "name": "@sufle/tool-exchange-rates",
       "version": "0.1.0",
       "dependencies": {
+        "@langchain/core": "^1.1.8",
         "kurlar": "^1.0.2",
+        "zod": "^4.1.11",
+      },
+      "peerDependencies": {
+        "typescript": "^5.0.0",
+      },
+    },
+    "packages/tool-rag": {
+      "name": "@sufle/tool-rag",
+      "version": "0.0.1",
+      "dependencies": {
+        "@langchain/classic": "^1.0.7",
+        "@langchain/core": "^1.1.8",
         "zod": "^4.1.11",
       },
       "peerDependencies": {
@@ -102,6 +116,7 @@
       "name": "@sufle/tool-weather",
       "version": "0.0.1",
       "dependencies": {
+        "@langchain/core": "^1.1.8",
         "zod": "^4.1.11",
       },
       "peerDependencies": {
@@ -395,6 +410,8 @@
     "@sufle/embeddings": ["@sufle/embeddings@workspace:packages/embeddings"],
 
     "@sufle/tool-exchange-rates": ["@sufle/tool-exchange-rates@workspace:packages/tool-exchange-rates"],
+
+    "@sufle/tool-rag": ["@sufle/tool-rag@workspace:packages/tool-rag"],
 
     "@sufle/tool-weather": ["@sufle/tool-weather@workspace:packages/tool-weather"],
 

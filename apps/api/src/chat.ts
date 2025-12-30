@@ -4,7 +4,7 @@ const providers = new Map([
   [
     "google",
     (opts: any) => {
-      return new ChatGoogleGenerativeAI(opts);
+      return new ChatGoogleGenerativeAI({ ...opts });
     },
   ],
 ]);

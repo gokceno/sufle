@@ -1,11 +1,12 @@
 import { z } from "zod";
+import { tool } from "@langchain/core/tools";
 
 const name: string = "weather";
 const description: string = `Get weather information for any city. When asked about weather for ANY city, you MUST call the "weather" tool with that city name.`;
 
 const baseUrl = "http://api.openweathermap.org";
 
-const create = (opts) => {
+const create = (opts: Opts) => {
   const schema = z.object({
     city: z.string().describe("Name of the city to find the weather for."),
   });
@@ -18,7 +19,12 @@ const create = (opts) => {
       weather: weather.map((w) => w.description),
     };
   };
-  return { provider, schema, name, description };
+  return tool(provider, {
+    name,
+    description,
+    schema,
+    responseFormat: "artifact",
+  });
 };
 
 const geocode = async (

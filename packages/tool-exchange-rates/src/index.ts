@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { tool } from "@langchain/core/tools";
 import { fetchCurrency } from "kurlar";
 
 const name: string = "exchangeRates";
@@ -8,7 +9,7 @@ const description: string = `
   This tool will give the exchange rate for the input currency against Turkish Lira (TRL).
 `;
 
-const create = (opts) => {
+const create = (opts?: any) => {
   const schema = z.object({
     currency: z
       .enum([
@@ -43,7 +44,12 @@ const create = (opts) => {
     });
     return result;
   };
-  return { provider, schema, name, description };
+  return tool(provider, {
+    name,
+    description,
+    schema,
+    responseFormat: "artifact",
+  });
 };
 
 export { create, name, description };

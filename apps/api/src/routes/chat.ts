@@ -75,7 +75,7 @@ export default async function chat(fastify: FastifyInstance) {
         // Validate against limits, throw an error otherwise.
         checkLimits(messages, outputModelConfig);
 
-        const ragResponse = await perform(
+        const { response: ragResponse } = await perform(
           outputModelConfig,
           messages,
           request.permissions

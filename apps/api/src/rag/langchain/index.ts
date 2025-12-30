@@ -6,11 +6,14 @@ import type { ChatMessage } from "../../types/chat";
 import * as availableTools from "../../tools";
 import { tool } from "@langchain/core/tools";
 import { MultiServerMCPClient } from "@langchain/mcp-adapters";
-import { createAgent, HumanMessage, AIMessage } from "langchain";
-import { createRetrieverTool } from "@langchain/classic/tools/retriever";
-import { MemorySaver } from "@langchain/langgraph";
+import { createAgent } from "langchain";
+import {
+  HumanMessage,
+  AIMessage,
+  ToolMessage,
+  SystemMessage,
+} from "@langchain/core/messages";
 import { create as createPrompt } from "./prompt";
-import * as z from "zod";
 
 const config: Config = parse(process.env.CONFIG_PATH || "sufle.yml");
 const rawConfig: RawConfig = raw(process.env.CONFIG_PATH || "sufle.yml");
@@ -69,11 +72,11 @@ const sanitizeMCPTools = (tools: any[]): any[] => {
   });
 };
 
-const initialize = async (outputModelConfig: object) => {
-  const { initialize, filter } = await storeFactory(
-    config.rag.vectorStore.provider
-  );
-  const baseLlm = chatFactory(
+const initialize = async (
+  outputModelConfig: object,
+  permissions?: Array<object>
+) => {
+  const model = chatFactory(
     (outputModelConfig as any).chat.provider,
     (outputModelConfig as any).chat.opts
   );
@@ -86,55 +89,48 @@ const initialize = async (outputModelConfig: object) => {
       if (typeof matchedTool?.create !== "function") {
         throw new Error(`Configured tool: ${configuredTool} is not available`);
       }
-      const { provider, schema, name, description } = matchedTool.create({
+      const tool = matchedTool.create({
+        storeFactory,
+        config,
+        permissions,
         ...configuredTool.opts,
       });
-      return tool(async (input: any) => provider(input), {
-        schema,
-        name,
-        description,
-        responseFormat: "artifact",
-      });
+      return tool;
     }) || [];
 
-  const mcpServers: Record<string, any> = {};
   const mcpInstructions: Array<{ name: string; instructions: any }> = [];
-  let mcpTools: any = [];
+  let mcpTools: any[] = [];
 
   if (rawConfig.mcp_servers && rawConfig.mcp_servers.length > 0) {
+    const mcpServers: Record<string, any> = {};
+
     for (const s of rawConfig.mcp_servers) {
       mcpServers[s.server] = {
         command: s.command,
         args: s.args,
         env: s.env,
-        instructions: s.instructions,
       };
       mcpInstructions.push({
         name: s.server,
         instructions: s.instructions,
       });
     }
+
     if (Object.keys(mcpServers).length > 0) {
       logger.debug("Initializing MCP servers:", Object.keys(mcpServers));
       try {
         const mcpClient = new MultiServerMCPClient(mcpServers);
         const rawMcpTools = await mcpClient.getTools();
         const sanitizedTools = sanitizeMCPTools(rawMcpTools);
-        logger.debug("Tools after sanitization:", sanitizedTools.length);
 
+        // Wrap MCP tools - they have 'func' property that needs to be exposed as invoke
         mcpTools = sanitizedTools.map((t: any) => {
-          logger.debug(`Wrapping tool: ${t.name}`);
-          const originalInvoke = t.invoke ? t.invoke.bind(t) : t.func?.bind(t);
-          if (!originalInvoke) {
-            throw new Error(`Tool ${t.name} is not properly formed`);
-          }
-
           return tool(
             async (input: any) => {
               try {
-                const result = await originalInvoke(input);
-                return result;
+                return await t.func(input);
               } catch (error: any) {
+                logger.error(`Error executing tool ${t.name}:`, error.message);
                 return `Error executing ${t.name}: ${error.message}`;
               }
             },
@@ -145,26 +141,19 @@ const initialize = async (outputModelConfig: object) => {
             }
           );
         });
+        logger.debug(`Loaded ${mcpTools.length} MCP tools`);
       } catch (error: any) {
         logger.error("Error initializing MCP client:", error);
         throw error;
       }
     }
   }
+
   const tools = [...localTools, ...mcpTools];
-
-  const promptTemplate = createPrompt(tools, mcpInstructions);
-
-  // Extract the system prompt from the template
-  // The prompt template has the system message as the first message
-  const firstMessage = promptTemplate.promptMessages[0] as any;
-  const systemPrompt =
-    firstMessage.prompt?.template || firstMessage.template || "";
+  const systemPrompt = createPrompt(tools, mcpInstructions);
 
   return {
-    store: initialize(),
-    llm: baseLlm,
-    filter,
+    model,
     tools,
     systemPrompt,
   };
@@ -174,141 +163,61 @@ const perform = async (
   outputModelConfig: object,
   messages: ChatMessage[],
   permissions?: Array<object>
-): Promise<string> => {
-  const { store, filter, tools, systemPrompt } = await initialize(
-    outputModelConfig
-  );
-
-  const retriever = store.asRetriever({
-    ...config.rag.retriever.opts,
-    ...filter(permissions),
-  });
-
-  const chatContext = messages
-    .map((msg) => `${msg.role}: ${msg.content}`)
-    .join("\n");
-
-  // Track retrieved documents for verification
-  let retrievedDocuments: any[] = [];
-  let retrievalQuery: string = "";
-
+): Promise<{ response: string }> => {
   try {
-    // Create a retriever tool for RAG with logging
-    const retrieverTool = createRetrieverTool(retriever, {
-      name: "retrieve_documents",
-      description:
-        "Search the knowledge base for relevant information. Use this to find context from uploaded documents. ALWAYS use this tool before answering questions about documentation, policies, or stored information.",
-    });
-
-    // Wrap the retriever tool to capture retrieved documents
-    const wrappedRetrieverTool = tool(
-      async (input: any) => {
-        retrievalQuery = input.query || input;
-        logger.debug("[RAG] Retrieving documents for query:", retrievalQuery);
-        const result = await retrieverTool.invoke(input);
-
-        // Parse the result to extract documents
-        try {
-          const docs = await retriever.invoke(input.query || input);
-          retrievedDocuments = docs;
-
-          logger.debug(`[RAG] Retrieved ${docs.length} documents`);
-
-          docs.forEach((doc: any, idx: number) => {
-            logger.debug(`[RAG] Document ${idx + 1}:`, {
-              source: doc.metadata?.source || "unknown",
-              score: doc.metadata?.score || "N/A",
-              preview: doc.pageContent?.substring(0, 100) || "",
-              fullContent: doc.pageContent,
-              metadata: doc.metadata,
-            });
-          });
-        } catch (err) {
-          logger.error("[RAG] Error extracting documents:", err);
-        }
-
-        return result;
-      },
-      {
-        name: "retrieve_documents",
-        description:
-          "Search the knowledge base for relevant information. Use this to find context from uploaded documents. ALWAYS use this tool before answering questions about documentation, policies, or stored information.",
-        schema: z.object({
-          query: z
-            .string()
-            .describe("The search query to find relevant documents"),
-        }),
-      }
+    const { model, tools, systemPrompt } = await initialize(
+      outputModelConfig,
+      permissions
     );
 
-    const allTools = [wrappedRetrieverTool, ...tools];
-    logger.debug("Total tools including retriever:", allTools.length);
-
-    // Extract model configuration for createAgent
-    const modelConfig = (outputModelConfig as any).chat.opts;
-    const checkpointer = new MemorySaver();
+    logger.debug(`Initializing agent with ${tools.length} tools`);
 
     const agent = createAgent({
-      model: `google-genai:${modelConfig.model}`,
-      tools: allTools,
+      model,
+      tools,
       systemPrompt,
-      checkpointer,
     });
 
-    logger.debug("Invoking agent");
+    const latestUserMessage = messages
+      .filter((msg) => msg.role === "user")
+      .pop();
 
-    // Convert messages to LangChain message objects
-    const langchainMessages = messages.map((msg) => {
-      if (msg.role === "assistant") {
-        return new AIMessage(msg.content);
-      }
-      // Treat both "user" and "system" as HumanMessage
-      return new HumanMessage(msg.content);
-    });
-
-    const result = await agent.invoke(
-      {
-        messages: langchainMessages as any,
-      },
-      {
-        configurable: { thread_id: "default" },
-      }
-    );
-
-    logger.debug("[Agent] Result received");
-
-    // Extract the final response
-    if (result.messages && result.messages.length > 0) {
-      const lastMessage = result.messages[result.messages.length - 1];
-      const content = lastMessage.content;
-
-      // Log RAG usage verification
-      if (retrievedDocuments.length > 0) {
-        logger.debug(
-          `Response generated using ${retrievedDocuments.length} retrieved documents`
-        );
-        logger.debug("Retrieved docs:", retrievedDocuments.length);
-      } else {
-        logger.warn("No documents were retrieved for this response");
-      }
-
-      // Handle different content types
-      if (typeof content === "string") {
-        return content;
-      } else if (Array.isArray(content)) {
-        return content
-          .map((block: any) =>
-            typeof block === "string" ? block : block.text || ""
-          )
-          .join("");
-      }
-      return "No response generated";
+    if (!latestUserMessage) {
+      throw new Error("No user message found in conversation");
     }
 
-    return JSON.stringify(result);
+    const userContent = String(latestUserMessage.content || "");
+    logger.debug("Invoking agent with message", userContent);
+
+    const result = await agent.invoke({
+      messages: [new HumanMessage(userContent)] as any,
+    });
+
+    logger.debug(`Agent completed with ${result.messages.length} messages`);
+
+    const lastAIMessage = [...result.messages]
+      .reverse()
+      .find((m) => m instanceof AIMessage);
+
+    const response = lastAIMessage?.text;
+
+    if (!response || response.trim().length === 0) {
+      logger.error("Empty response text");
+      return {
+        response: "I apologize, but I wasn't able to generate a response.",
+      };
+    }
+
+    logger.debug(`Response generated: ${response.length} characters`);
+
+    return {
+      response,
+    };
   } catch (error: any) {
-    logger.error("Error during execution:", error);
-    return `I encountered an error while processing your request: ${error.message}. Please try again.`;
+    logger.error("Error during agent execution:", error?.message || error);
+    return {
+      response: `I encountered an error while processing your request. Please try again.`,
+    };
   }
 };
 
@@ -339,5 +248,23 @@ const limits = (messages: ChatMessage[], outputModelConfig: object) => {
   }
   return null;
 };
+
+function openAIToLangChainMessage(msg: { role: string; content: string }) {
+  switch (msg.role) {
+    case "user":
+      return new HumanMessage(msg.content);
+    case "assistant":
+      return new AIMessage(msg.content);
+    case "system":
+      return new SystemMessage(msg.content);
+    case "tool":
+      return new ToolMessage({
+        content: msg.content,
+        tool_call_id: "external", // required field
+      });
+    default:
+      throw new Error(`Unsupported role: ${msg.role}`);
+  }
+}
 
 export { perform, tokens, limits };

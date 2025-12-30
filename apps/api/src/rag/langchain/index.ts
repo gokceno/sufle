@@ -7,12 +7,7 @@ import * as availableTools from "../../tools";
 import { tool } from "@langchain/core/tools";
 import { MultiServerMCPClient } from "@langchain/mcp-adapters";
 import { createAgent } from "langchain";
-import {
-  HumanMessage,
-  AIMessage,
-  ToolMessage,
-  SystemMessage,
-} from "@langchain/core/messages";
+import { HumanMessage, AIMessage } from "@langchain/core/messages";
 import { create as createPrompt } from "./prompt";
 
 const config: Config = parse(process.env.CONFIG_PATH || "sufle.yml");
@@ -187,7 +182,7 @@ const perform = async (
     }
 
     const userContent = String(latestUserMessage.content || "");
-    logger.debug("Invoking agent with message", userContent);
+    logger.debug(`Invoking agent with message: ${userContent}`);
 
     const result = await agent.invoke({
       messages: [new HumanMessage(userContent)] as any,
@@ -248,23 +243,5 @@ const limits = (messages: ChatMessage[], outputModelConfig: object) => {
   }
   return null;
 };
-
-function openAIToLangChainMessage(msg: { role: string; content: string }) {
-  switch (msg.role) {
-    case "user":
-      return new HumanMessage(msg.content);
-    case "assistant":
-      return new AIMessage(msg.content);
-    case "system":
-      return new SystemMessage(msg.content);
-    case "tool":
-      return new ToolMessage({
-        content: msg.content,
-        tool_call_id: "external", // required field
-      });
-    default:
-      throw new Error(`Unsupported role: ${msg.role}`);
-  }
-}
 
 export { perform, tokens, limits };

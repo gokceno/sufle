@@ -156,7 +156,7 @@ const initialize = async (
 
 const perform = async (
   outputModelConfig: object,
-  messages: ChatMessage[],
+  input: ChatMessage[],
   permissions?: Array<object>
 ): Promise<{ response: string }> => {
   try {
@@ -173,19 +173,25 @@ const perform = async (
       systemPrompt,
     });
 
-    const latestUserMessage = messages
-      .filter((msg) => msg.role === "user")
-      .pop();
+    // Convert all messages to LangChain format for conversation memory
+    const messages: any = input
+      .map((msg) => {
+        const content = String(msg.content || "");
+        if (msg.role === "user") {
+          return new HumanMessage(content);
+        } else if (msg.role === "assistant") {
+          return new AIMessage(content);
+        }
+        return null;
+      })
+      .filter(Boolean); // Remove null values
 
-    if (!latestUserMessage) {
+    if (messages.length === 0) {
       throw new Error("No user message found in conversation");
     }
 
-    const userContent = String(latestUserMessage.content || "");
-    logger.debug(`Invoking agent with message: ${userContent}`);
-
     const result = await agent.invoke({
-      messages: [new HumanMessage(userContent)] as any,
+      messages,
     });
 
     logger.debug(`Agent completed with ${result.messages.length} messages`);

@@ -45,7 +45,7 @@ services:
       - api
 
   api:
-    image: ghcr.io/gokceno/sufle-api:0.5.5
+    image: ghcr.io/gokceno/sufle-api:0.7.1
     container_name: api
     command: start:api
     ports:

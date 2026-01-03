@@ -294,7 +294,7 @@ output_models:
       opts:
         model: gemini-2.5-flash
         api_key: ${GOOGLE_API_KEY}
-        temprature: 1
+        temperature: 1
         max_messages: 32
         max_tokens: 8192
         max_message_length: 4096

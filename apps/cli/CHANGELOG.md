@@ -1,5 +1,11 @@
 # @sufle/cli
 
+## 0.4.0
+
+### Minor Changes
+
+- ffc680c: Download semantic-chunking models in CLI image
+
 ## 0.3.0
 
 ### Minor Changes

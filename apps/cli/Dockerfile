@@ -47,6 +47,8 @@ WORKDIR /app
 # Copy everything from build stage including the Bun runtime and dependencies
 COPY --from=build /app .
 
+RUN bun /app/node_modules/semantic-chunking/tools/download-models.js
+
 LABEL org.opencontainers.source=https://github.com/gokceno/sufle/
 
 ENTRYPOINT ["bun"]

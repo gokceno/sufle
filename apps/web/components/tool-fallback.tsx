@@ -48,8 +48,12 @@ export const ToolFallback: ToolCallMessagePartComponent = ({
           {isCancelled ? "Cancelled tool: " : "Used tool: "}
           <b>{toolName}</b>
         </p>
-        <Button onClick={() => setIsCollapsed(!isCollapsed)}>
-          {isCollapsed ? <ChevronUpIcon /> : <ChevronDownIcon />}
+        <Button
+          type="button"
+          aria-label="Toggle tool details"
+          aria-expanded={!isCollapsed}
+          onClick={() => setIsCollapsed(!isCollapsed)}>
+          {isCollapsed ? <ChevronDownIcon /> : <ChevronUpIcon />}
         </Button>
       </div>
       {!isCollapsed && (

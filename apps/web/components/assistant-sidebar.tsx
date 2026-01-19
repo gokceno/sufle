@@ -1,0 +1,53 @@
+"use client";
+
+import { ThreadList } from "@/components/thread-list";
+import { Button } from "@/components/ui/button";
+import { PanelLeftIcon } from "lucide-react";
+import { type FC } from "react";
+import { cn } from "@/lib/utils";
+
+type AssistantSidebarProps = {
+    isOpen: boolean;
+    setIsOpen: (open: boolean) => void;
+};
+
+export const AssistantSidebar: FC<AssistantSidebarProps> = ({ isOpen, setIsOpen }) => {
+    return (
+        <>
+            {/* Toggle Button - Always visible */}
+            <Button
+                variant="ghost"
+                size="icon"
+                className="fixed top-3 left-3 z-50"
+                onClick={() => setIsOpen(!isOpen)}
+                title={isOpen ? "Close sidebar" : "Open sidebar"}
+            >
+                <PanelLeftIcon className="size-5" />
+            </Button>
+
+            {/* Overlay - Mobile Only */}
+            {isOpen && (
+                <div
+                    className="fixed inset-0 z-40 bg-black/50 md:hidden"
+                    onClick={() => setIsOpen(false)}
+                />
+            )}
+
+            {/* Sidebar */}
+            <aside
+                className={cn(
+                    "fixed top-0 left-0 z-40 h-screen flex-shrink-0 transform border-r bg-background transition-all duration-300 ease-in-out",
+                    isOpen ? "w-64 translate-x-0" : "w-0 -translate-x-full",
+                    "md:static"
+                )}
+            >
+                <div className="flex h-full flex-col p-2 pt-16 md:pt-14">
+                    {/* Thread List */}
+                    <div className="flex-1 overflow-y-auto">
+                        <ThreadList />
+                    </div>
+                </div>
+            </aside>
+        </>
+    );
+};

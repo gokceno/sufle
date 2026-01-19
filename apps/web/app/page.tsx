@@ -5,11 +5,14 @@ import { Thread } from "@/components/thread";
 import { createApiChatModelAdapter } from "@/lib/api-chat-model-adapter";
 import { AssistantRuntimeProvider, useLocalRuntime } from "@assistant-ui/react";
 import { ModelSelector } from "@/components/model-selector";
+import { AssistantSidebar } from "@/components/assistant-sidebar";
+import { cn } from "@/lib/utils";
 
 type ModelId = "sufle/sufle-lite" | "sufle/sufle-original" | "sufle/sufle-max";
 
 export default function Page() {
   const [selectedModel, setSelectedModel] = useState<ModelId>("sufle/sufle-original");
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   const adapter = useMemo(
     () => createApiChatModelAdapter(selectedModel),
@@ -18,23 +21,37 @@ export default function Page() {
 
   const runtime = useLocalRuntime(adapter);
 
+  const maxWidth = sidebarOpen ? "44rem" : "56rem";
+
   return (
     <AssistantRuntimeProvider runtime={runtime}>
-      <div className="h-screen flex flex-col">
-        <div className="bg-background border-b border-transparent">
-          <div
-            className="mx-auto flex h-14 w-full items-center"
-            style={{ maxWidth: "45.5rem" }}
-          >
-            <ModelSelector
-              currentModel={selectedModel}
-              onModelChange={setSelectedModel}
-            />
-          </div>
-        </div>
+      <div className="flex h-screen overflow-hidden">
+        {/* Sidebar */}
+        <AssistantSidebar isOpen={sidebarOpen} setIsOpen={setSidebarOpen} />
 
-        <div className="flex-1 overflow-hidden">
-          <Thread />
+        {/* Main Content */}
+        <div className="flex flex-1 flex-col transition-all duration-300 ease-in-out">
+
+          {/* Header - Dropdown Alanı */}
+          <div className="border-b border-transparent bg-background">
+            <div className={cn(
+              "flex h-14 w-full items-center transition-all duration-300 ease-in-out",
+              sidebarOpen ? "px-4" : "pl-12 pr-4"
+            )}>
+              <ModelSelector
+                currentModel={selectedModel}
+                onModelChange={setSelectedModel}
+              />
+            </div>
+          </div>
+
+          {/* Thread - Sohbet Alanı */}
+          <div
+            className="flex-1 overflow-hidden"
+            style={{ ["--thread-max-width" as string]: maxWidth }}
+          >
+            <Thread />
+          </div>
         </div>
       </div>
     </AssistantRuntimeProvider>

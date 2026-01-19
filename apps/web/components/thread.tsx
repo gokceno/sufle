@@ -1,4 +1,3 @@
-// Attachment components removed - text-only for now
 import { MarkdownText } from "@/components/markdown-text";
 import { ToolFallback } from "@/components/tool-fallback";
 import { TooltipIconButton } from "@/components/tooltip-icon-button";
@@ -32,10 +31,7 @@ import type { FC } from "react";
 export const Thread: FC = () => {
   return (
     <ThreadPrimitive.Root
-      className="aui-root aui-thread-root @container flex h-full flex-col bg-background"
-      style={{
-        ["--thread-max-width" as string]: "44rem",
-      }}
+      className="aui-root aui-thread-root @container flex h-full flex-col bg-background transition-all duration-300"
     >
       <ThreadPrimitive.Viewport
         turnAnchor="top"
@@ -54,7 +50,9 @@ export const Thread: FC = () => {
         />
 
         <AssistantIf condition={({ thread }) => !thread.isEmpty}>
-          <ThreadPrimitive.ViewportFooter className="aui-thread-viewport-footer sticky bottom-0 mx-auto mt-auto flex w-full max-w-(--thread-max-width) flex-col gap-4 overflow-visible rounded-t-3xl bg-background pb-4 md:pb-6">
+          <ThreadPrimitive.ViewportFooter
+            className="aui-thread-viewport-footer sticky bottom-0 mx-auto mt-auto flex w-full max-w-3xl flex-col gap-4 overflow-visible rounded-t-3xl bg-background px-4 pb-4 md:pb-6"
+          >
             <ThreadScrollToBottom />
             <Composer />
           </ThreadPrimitive.ViewportFooter>
@@ -80,9 +78,11 @@ const ThreadScrollToBottom: FC = () => {
 
 const ThreadWelcome: FC = () => {
   return (
-    <div className="aui-thread-welcome-root mx-auto my-auto flex w-full max-w-(--thread-max-width) grow flex-col px-4">
-      <div className="aui-thread-welcome-center flex w-full flex-1 flex-col items-center justify-center gap-10">
-        <h1 className="aui-thread-welcome-message-inner fade-in slide-in-from-bottom-1 animate-in text-center font-semibold text-4xl duration-200">
+    <div
+      className="aui-thread-welcome-root mx-auto my-auto flex w-full max-w-3xl grow flex-col px-4"
+    >
+      <div className="aui-thread-welcome-center flex w-full flex-1 flex-col items-start justify-center gap-10">
+        <h1 className="aui-thread-welcome-message-inner fade-in slide-in-from-bottom-1 animate-in text-center font-semibold text-2xl duration-200">
           How can I help you today?
         </h1>
 
@@ -96,11 +96,11 @@ const ThreadWelcome: FC = () => {
 
 const Composer: FC = () => {
   return (
-    <ComposerPrimitive.Root className="aui-composer-root relative flex w-full flex-col">
+    <ComposerPrimitive.Root className="aui-composer-root relative mx-auto flex w-full flex-col max-w-3xl">
       <div className="flex w-full flex-col rounded-2xl border border-input bg-background px-1 pt-2 outline-none transition-shadow has-[textarea:focus-visible]:border-ring has-[textarea:focus-visible]:ring-2 has-[textarea:focus-visible]:ring-ring/20">
         <ComposerPrimitive.Input
           placeholder="Send a message..."
-          className="aui-composer-input mb-1 max-h-32 min-h-14 w-full resize-none bg-transparent px-4 pt-2 pb-3 text-sm outline-none placeholder:text-muted-foreground focus-visible:ring-0"
+          className="aui-composer-input mb-1 max-h-32 min-h-4 w-full resize-none bg-transparent px-4 pt-2 pb-3 text-sm outline-none placeholder:text-muted-foreground focus-visible:ring-0"
           rows={1}
           autoFocus
           aria-label="Message input"
@@ -160,10 +160,10 @@ const MessageError: FC = () => {
 const AssistantMessage: FC = () => {
   return (
     <MessagePrimitive.Root
-      className="aui-assistant-message-root fade-in slide-in-from-bottom-1 relative mx-auto w-full max-w-(--thread-max-width) animate-in py-3 duration-150"
+      className="aui-assistant-message-root fade-in slide-in-from-bottom-1 relative mx-auto w-full max-w-3xl animate-in px-5 py-3"
       data-role="assistant"
     >
-      <div className="aui-assistant-message-content wrap-break-word px-2 text-foreground leading-relaxed">
+      <div className="aui-assistant-message-content wrap-break-word text-foreground leading-relaxed">
         <MessagePrimitive.Parts
           components={{
             Text: MarkdownText,
@@ -173,7 +173,7 @@ const AssistantMessage: FC = () => {
         <MessageError />
       </div>
 
-      <div className="aui-assistant-message-footer mt-1 ml-2 flex">
+      <div className="aui-assistant-message-footer mt-1 flex">
         <BranchPicker />
         <AssistantActionBar />
       </div>
@@ -233,7 +233,7 @@ const AssistantActionBar: FC = () => {
 const UserMessage: FC = () => {
   return (
     <MessagePrimitive.Root
-      className="aui-user-message-root fade-in slide-in-from-bottom-1 mx-auto grid w-full max-w-(--thread-max-width) animate-in auto-rows-auto grid-cols-[minmax(72px,1fr)_auto] content-start gap-y-2 px-2 py-3 duration-150 [&:where(>*)]:col-start-2"
+      className="aui-user-message-root fade-in slide-in-from-bottom-1 mx-auto grid w-full max-w-3xl animate-in auto-rows-auto grid-cols-[minmax(72px,1fr)_auto] content-start gap-y-2 px-4 py-3 [&:where(>*)]:col-start-2"
       data-role="user"
     >
       <div className="aui-user-message-content-wrapper relative col-start-2 min-w-0">
@@ -268,7 +268,7 @@ const UserActionBar: FC = () => {
 
 const EditComposer: FC = () => {
   return (
-    <MessagePrimitive.Root className="aui-edit-composer-wrapper mx-auto flex w-full max-w-(--thread-max-width) flex-col px-2 py-3">
+    <MessagePrimitive.Root className="aui-edit-composer-wrapper mx-auto flex w-full max-w-[var(--thread-max-width)] flex-col px-4 py-3 transition-[max-width] duration-300 ease-in-out">
       <ComposerPrimitive.Root className="aui-edit-composer-root ml-auto flex w-full max-w-[85%] flex-col rounded-2xl bg-muted">
         <ComposerPrimitive.Input
           className="aui-edit-composer-input min-h-14 w-full resize-none bg-transparent p-4 text-foreground text-sm outline-none"

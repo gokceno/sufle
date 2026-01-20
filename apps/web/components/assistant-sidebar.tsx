@@ -2,9 +2,11 @@
 
 import { ThreadList } from "@/components/thread-list";
 import { Button } from "@/components/ui/button";
-import { PanelLeftIcon } from "lucide-react";
+import { PanelLeftIcon, LogOutIcon } from "lucide-react";
+import { LogoImg } from "@/components/icons/logo-img"
 import { type FC } from "react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/hooks/use-auth";
 
 type AssistantSidebarProps = {
     isOpen: boolean;
@@ -12,17 +14,20 @@ type AssistantSidebarProps = {
 };
 
 export const AssistantSidebar: FC<AssistantSidebarProps> = ({ isOpen, setIsOpen }) => {
+    const { logout } = useAuth();
+
     return (
         <>
             {/* Toggle Button - Always visible */}
             <Button
                 variant="ghost"
                 size="icon"
-                className="fixed top-3 left-3 z-50"
+                className="group fixed top-3 left-3 z-50 cursor-ew-resize"
                 onClick={() => setIsOpen(!isOpen)}
                 title={isOpen ? "Close sidebar" : "Open sidebar"}
             >
-                <PanelLeftIcon className="size-5" />
+                <LogoImg className="block group-hover:hidden size-5" />
+                <PanelLeftIcon className="hidden group-hover:block size-5" />
             </Button>
 
             {/* Overlay - Mobile Only */}
@@ -35,19 +40,33 @@ export const AssistantSidebar: FC<AssistantSidebarProps> = ({ isOpen, setIsOpen 
 
             {/* Sidebar */}
             <aside
-                style={{ borderRight: "1px solid #E5E7EB" }}
+                style={{ borderRight: "1px solid oklch(0.922 0 0)" }}
                 className={cn(
                     "fixed top-0 left-0 z-40 h-screen flex-shrink-0 transform bg-background transition-all duration-300 ease-in-out",
                     isOpen ? "w-64 translate-x-0" : "w-0 -translate-x-full",
                     "md:static"
                 )}
             >
-                <div className="flex h-full flex-col p-2 pt-16 md:pt-14">
-                    {/* Thread List */}
-                    <div className="flex-1 overflow-y-auto">
-                        <ThreadList />
+                {isOpen && (
+                    <div className="flex h-full flex-col p-2 pt-16 md:pt-14">
+                        {/* Thread List */}
+                        <div className="flex-1 overflow-y-auto">
+                            <ThreadList />
+                        </div>
+
+                        {/* Logout Button */}
+                        <div className="border-t border-border pt-2">
+                            <Button
+                                variant="ghost"
+                                className="w-full justify-start gap-2 cursor-pointer text-muted-foreground hover:text-foreground"
+                                onClick={logout}
+                            >
+                                <LogOutIcon className="size-4" />
+                                Log out
+                            </Button>
+                        </div>
                     </div>
-                </div>
+                )}
             </aside>
         </>
     );

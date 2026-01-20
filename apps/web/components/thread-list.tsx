@@ -28,7 +28,7 @@ const ThreadListNew: FC = () => {
     <ThreadListPrimitive.New asChild>
       <Button
         variant="outline"
-        className="aui-thread-list-new h-9 justify-start gap-2 rounded-lg px-3 text-sm hover:bg-muted data-active:bg-muted"
+        className="aui-thread-list-new h-9 justify-start gap-2 rounded-lg px-3 cursor-pointer text-sm hover:bg-muted data-active:bg-muted"
       >
         <PlusIcon className="size-4" />
         New Thread
@@ -45,7 +45,7 @@ const ThreadListSkeleton: FC = () => {
           key={i}
           role="status"
           aria-label="Loading threads"
-          className="aui-thread-list-skeleton-wrapper flex h-9 items-center px-3"
+          className="aui-thread-list-skeleton-wrapper flex h-9 cursor-pointer items-center px-3"
         >
           <Skeleton className="aui-thread-list-skeleton h-4 w-full" />
         </div>

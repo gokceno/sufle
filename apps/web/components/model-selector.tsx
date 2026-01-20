@@ -28,7 +28,7 @@ export function ModelSelector({ currentModel, onModelChange }: ModelSelectorProp
             <Button
                 variant="ghost"
                 onClick={() => setIsOpen(!isOpen)}
-                className="flex items-center gap-2 px-3 py-2 text-xl font-semibold hover:bg-transparent"
+                className="flex items-center gap-2 px-3 py-2 cursor-pointer text-xl font-semibold hover:bg-transparent"
             >
                 <span>{selectedModel.name}</span>
                 <ChevronDownIcon className={cn(
@@ -46,7 +46,7 @@ export function ModelSelector({ currentModel, onModelChange }: ModelSelectorProp
                     />
 
                     {/* Dropdown */}
-                    <div className="absolute left-0 top-full z-50 mt-2 w-64 rounded-lg border bg-popover p-1 shadow-lg">
+                    <div className="absolute left-0 top-full z-50 mt-2 w-64 rounded-lg bg-popover p-1 shadow-lg">
                         <div className="px-3 py-2 text-muted-foreground text-xs font-semibold">
                             Select Model
                         </div>
@@ -58,7 +58,7 @@ export function ModelSelector({ currentModel, onModelChange }: ModelSelectorProp
                                     setIsOpen(false);
                                 }}
                                 className={cn(
-                                    "flex w-full items-center justify-between gap-2 rounded-md px-3 py-2 text-left text-sm transition-colors hover:bg-accent",
+                                    "flex w-full items-center justify-between gap-2 rounded-md px-3 py-2 cursor-pointer text-left text-sm transition-colors hover:bg-accent",
                                     currentModel === model.id && "bg-accent"
                                 )}
                             >

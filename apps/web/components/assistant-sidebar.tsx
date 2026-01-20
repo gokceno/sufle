@@ -35,8 +35,9 @@ export const AssistantSidebar: FC<AssistantSidebarProps> = ({ isOpen, setIsOpen 
 
             {/* Sidebar */}
             <aside
+                style={{ borderRight: "1px solid #E5E7EB" }}
                 className={cn(
-                    "fixed top-0 left-0 z-40 h-screen flex-shrink-0 transform border-r bg-background transition-all duration-300 ease-in-out",
+                    "fixed top-0 left-0 z-40 h-screen flex-shrink-0 transform bg-background transition-all duration-300 ease-in-out",
                     isOpen ? "w-64 translate-x-0" : "w-0 -translate-x-full",
                     "md:static"
                 )}

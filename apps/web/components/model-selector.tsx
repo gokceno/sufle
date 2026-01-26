@@ -2,35 +2,72 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { ChevronDownIcon, CheckIcon } from "lucide-react";
+import { ChevronDownIcon, CheckIcon, Loader2Icon } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-const MODELS = [
-    { id: "sufle/sufle-lite", name: "Sufle Lite", description: "Fast & efficient" },
-    { id: "sufle/sufle-original", name: "Sufle Original", description: "Balanced" },
-    { id: "sufle/sufle-max", name: "Sufle Max", description: "Most capable" },
-] as const;
-
-type ModelId = typeof MODELS[number]["id"];
+import { type Model } from "@/hooks/use-models";
 
 export interface ModelSelectorProps {
-    currentModel: ModelId;
-    onModelChange: (modelId: ModelId) => void;
+    models: Model[];
+    currentModel: string | null;
+    onModelChange: (modelId: string) => void;
+    isLoading?: boolean;
 }
 
-export function ModelSelector({ currentModel, onModelChange }: ModelSelectorProps) {
+function formatModelName(id: string): string {
+    const name = id.split("/").pop() || id;
+    return name
+        .split("-")
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(" ");
+}
+
+function getModelDescription(id: string): string {
+    const name = id.toLowerCase();
+    if (name.includes("lite")) return "Fast & light";
+    if (name.includes("max")) return "Most capable";
+    if (name.includes("original")) return "Balanced performance";
+    return "AI model";
+}
+
+export function ModelSelector({ models, currentModel, onModelChange, isLoading }: ModelSelectorProps) {
     const [isOpen, setIsOpen] = useState(false);
 
-    const selectedModel = MODELS.find((m) => m.id === currentModel) || MODELS[0];
+    const selectedModel = models.find((m) => m.id === currentModel);
+    const displayName = selectedModel ? formatModelName(selectedModel.id) : "Select Model";
+
+    if (isLoading) {
+        return (
+            <Button
+                variant="ghost"
+                disabled
+                className="flex items-center gap-2 px-3 py-2 text-0.4xl font-semibold"
+            >
+                <Loader2Icon className="size-4 animate-spin" />
+                <span>Loading models...</span>
+            </Button>
+        );
+    }
+
+    if (models.length === 0) {
+        return (
+            <Button
+                variant="ghost"
+                disabled
+                className="flex items-center gap-2 px-3 py-2 text-0.4xl font-semibold text-muted-foreground"
+            >
+                <span>No models available</span>
+            </Button>
+        );
+    }
 
     return (
         <div className="relative">
             <Button
                 variant="ghost"
                 onClick={() => setIsOpen(!isOpen)}
-                className="flex items-center gap-2 px-3 py-2 cursor-pointer text-xl font-semibold hover:bg-transparent"
+                className="flex items-center gap-2 px-3 py-2 cursor-pointer text-0.4xl font-semibold hover:bg-transparent"
             >
-                <span>{selectedModel.name}</span>
+                <span>{displayName}</span>
                 <ChevronDownIcon className={cn(
                     "size-4 transition-transform duration-200",
                     isOpen && "rotate-180"
@@ -50,7 +87,7 @@ export function ModelSelector({ currentModel, onModelChange }: ModelSelectorProp
                         <div className="px-3 py-2 text-muted-foreground text-xs font-semibold">
                             Select Model
                         </div>
-                        {MODELS.map((model) => (
+                        {models.map((model) => (
                             <button
                                 key={model.id}
                                 onClick={() => {
@@ -63,8 +100,8 @@ export function ModelSelector({ currentModel, onModelChange }: ModelSelectorProp
                                 )}
                             >
                                 <div className="flex flex-col">
-                                    <span className="font-medium">{model.name}</span>
-                                    <span className="text-muted-foreground text-xs">{model.description}</span>
+                                    <span className="font-medium">{formatModelName(model.id)}</span>
+                                    <span className="text-muted-foreground text-xs">{getModelDescription(model.id)}</span>
                                 </div>
                                 {currentModel === model.id && (
                                     <CheckIcon className="size-4 text-primary" />

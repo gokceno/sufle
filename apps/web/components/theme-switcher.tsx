@@ -1,32 +1,43 @@
 "use client"
 
-import * as SwitchPrimitives from "@radix-ui/react-switch"
+import * as React from "react"
+import { Moon, Sun } from "lucide-react"
 import { useTheme } from "next-themes"
-import { useEffect, useState } from "react"
+
+import { Button } from "@/components/ui/button"
 
 export function ThemeSwitcher() {
     const { theme, setTheme } = useTheme()
-    const [mounted, setMounted] = useState(false)
+    const [mounted, setMounted] = React.useState(false)
 
-    useEffect(() => {
+    // Hydration hatasını önlemek için
+    React.useEffect(() => {
         setMounted(true)
     }, [])
 
     if (!mounted) {
-        return null
+        return (
+            <Button variant="ghost" className="w-full justify-start gap-2" disabled>
+                <span className="size-4" />
+                <span className="opacity-0">Loading...</span>
+            </Button>
+        )
     }
 
     return (
-        <div className="flex items-center space-x-2">
-            <SwitchPrimitives.Root
-                checked={theme === "dark"}
-                onCheckedChange={(checked) => setTheme(checked ? "dark" : "light")}
-                className="peer inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:bg-primary data-[state=unchecked]:bg-input"
-            >
-                <SwitchPrimitives.Thumb
-                    className="pointer-events-none block h-5 w-5 rounded-full bg-background shadow-lg ring-0 transition-transform data-[state=checked]:translate-x-5 data-[state=unchecked]:translate-x-0"
-                />
-            </SwitchPrimitives.Root>
-        </div>
+        <Button
+            variant="ghost"
+            className="w-full cursor-pointer justify-start gap-2 text-muted-foreground hover:text-foreground h-auto"
+            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+        >
+            <div className="relative flex items-center justify-center size-4 shrink-0">
+                <Sun className="absolute h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+                <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+            </div>
+
+            <span>
+                {theme === "dark" ? "Dark mode" : "Light mode"}
+            </span>
+        </Button>
     )
 }

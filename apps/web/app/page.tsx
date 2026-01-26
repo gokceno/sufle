@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Thread } from "@/components/thread";
 import { createApiChatModelAdapter } from "@/lib/api-chat-model-adapter";
 import { AssistantRuntimeProvider, useLocalRuntime } from "@assistant-ui/react";
@@ -8,15 +8,21 @@ import { ModelSelector } from "@/components/model-selector";
 import { AssistantSidebar } from "@/components/assistant-sidebar";
 import { AuthGuard } from "@/components/auth/auth-guard";
 import { cn } from "@/lib/utils";
-
-type ModelId = "sufle/sufle-lite" | "sufle/sufle-original" | "sufle/sufle-max";
+import { useModels } from "@/hooks/use-models";
 
 export default function Page() {
-  const [selectedModel, setSelectedModel] = useState<ModelId>("sufle/sufle-original");
+  const { models, isLoading: modelsLoading } = useModels();
+  const [selectedModel, setSelectedModel] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
+  useEffect(() => {
+    if (models.length > 0 && !selectedModel) {
+      setSelectedModel(models[0].id,);
+    }
+  }, [models, selectedModel]);
+
   const adapter = useMemo(
-    () => createApiChatModelAdapter(selectedModel),
+    () => createApiChatModelAdapter(selectedModel || undefined),
     [selectedModel]
   );
 
@@ -41,8 +47,10 @@ export default function Page() {
                 sidebarOpen ? "px-4" : "pl-12 pr-4"
               )}>
                 <ModelSelector
+                  models={models}
                   currentModel={selectedModel}
                   onModelChange={setSelectedModel}
+                  isLoading={modelsLoading}
                 />
               </div>
             </div>

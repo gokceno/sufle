@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
-import { ThemeSwitcher } from "@/components/theme-switcher";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -30,10 +29,6 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased h-screen relative`}
       >
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
-          <div className="absolute top-4 right-4 z-50">
-            <ThemeSwitcher />
-          </div>
-
           {children}
         </ThemeProvider>
       </body>

@@ -7,6 +7,7 @@ import { LogoImg } from "@/components/icons/logo-img"
 import { type FC } from "react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
+import { ThemeSwitcher } from "@/components/theme-switcher";
 
 type AssistantSidebarProps = {
     isOpen: boolean;
@@ -26,7 +27,7 @@ export const AssistantSidebar: FC<AssistantSidebarProps> = ({ isOpen, setIsOpen 
                 onClick={() => setIsOpen(!isOpen)}
                 title={isOpen ? "Close sidebar" : "Open sidebar"}
             >
-                <LogoImg className="block group-hover:hidden size-5" />
+                <LogoImg className="block group-hover:hidden size-9" />
                 <PanelLeftIcon className="hidden group-hover:block size-5" />
             </Button>
 
@@ -54,14 +55,19 @@ export const AssistantSidebar: FC<AssistantSidebarProps> = ({ isOpen, setIsOpen 
                             <ThreadList />
                         </div>
 
-                        {/* Logout Button */}
-                        <div className="border-t border-border pt-2">
+                        {/* Theme Switcher & Logout */}
+                        <div className="border-t border-border -mx-2 px-2 pt-2 space-y-1">
+                            <ThemeSwitcher />
+
+                            {/* Logout Button */}
                             <Button
                                 variant="ghost"
-                                className="w-full justify-start gap-2 cursor-pointer text-muted-foreground hover:text-foreground"
+                                className="w-full justify-start gap-2 cursor-pointer text-muted-foreground hover:text-foreground h-auto"
                                 onClick={logout}
                             >
-                                <LogOutIcon className="size-4" />
+                                <div className="relative flex items-center justify-center size-4 shrink-0">
+                                    <LogOutIcon className="size-4" />
+                                </div>
                                 Log out
                             </Button>
                         </div>

@@ -1,0 +1,70 @@
+"use client";
+
+import { useState, useMemo, useEffect } from "react";
+import { Thread } from "@/components/thread";
+import { createApiChatModelAdapter } from "@/lib/api-chat-model-adapter";
+import { AssistantRuntimeProvider, useLocalRuntime } from "@assistant-ui/react";
+import { ModelSelector } from "@/components/model-selector";
+import { AssistantSidebar } from "@/components/assistant-sidebar";
+import { AuthGuard } from "@/components/auth/auth-guard";
+import { cn } from "@/lib/utils";
+import { useModels } from "@/hooks/use-models";
+
+export default function Page() {
+  const { models, isLoading: modelsLoading } = useModels();
+  const [selectedModel, setSelectedModel] = useState<string | null>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+
+  useEffect(() => {
+    if (models.length > 0 && !selectedModel) {
+      setSelectedModel(models[0].id,);
+    }
+  }, [models, selectedModel]);
+
+  const adapter = useMemo(
+    () => createApiChatModelAdapter(selectedModel || undefined),
+    [selectedModel]
+  );
+
+  const runtime = useLocalRuntime(adapter);
+
+  const maxWidth = sidebarOpen ? "44rem" : "56rem";
+
+  return (
+    <AuthGuard>
+      <AssistantRuntimeProvider runtime={runtime}>
+        <div className="flex h-screen overflow-hidden">
+          {/* Sidebar */}
+          <AssistantSidebar isOpen={sidebarOpen} setIsOpen={setSidebarOpen} />
+
+          {/* Main Content */}
+          <div className="flex flex-1 flex-col transition-all duration-300 ease-in-out">
+
+            {/* Header - Dropdown Alanı */}
+            <div className="border-b border-transparent bg-background">
+              <div className={cn(
+                "flex h-14 w-full items-center transition-all duration-300 ease-in-out",
+                sidebarOpen ? "px-4" : "pl-12 pr-4"
+              )}>
+                <ModelSelector
+                  models={models}
+                  currentModel={selectedModel}
+                  onModelChange={setSelectedModel}
+                  isLoading={modelsLoading}
+                />
+              </div>
+            </div>
+
+            {/* Thread - Sohbet Alanı */}
+            <div
+              className="flex-1 overflow-hidden"
+              style={{ ["--thread-max-width" as string]: maxWidth }}
+            >
+              <Thread />
+            </div>
+          </div>
+        </div>
+      </AssistantRuntimeProvider>
+    </AuthGuard>
+  );
+}
